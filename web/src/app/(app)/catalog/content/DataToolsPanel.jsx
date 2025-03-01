@@ -6,9 +6,9 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronDown, faArrowDown, faArrowUp } from "@fortawesome/free-solid-svg-icons";
 
 import { ArrowDownUp, Filter, LayerGroup } from "@/components/atoms/Icon";
-import SortDropdown from "./DataTools/SortMenu";
-import FilterDropdown from "./DataTools/FilterMenu";
-import GroupByDropdown, { getGroupLabel } from "./DataTools/GroupByMenu";
+import SortDropdown from "./TableMenu/SortMenu";
+import FilterDropdown from "./TableMenu/FilterMenu";
+import GroupByDropdown, { getGroupLabel } from "./TableMenu/GroupByMenu";
 
 const DataToolsContainer = styled.div`
   display: flex;

@@ -1,41 +1,10 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useState } from "react";
 import Checkbox from "@/components/atoms/Checkbox";
 import styled from "styled-components";
 import { XMark, Trash } from "@/components/atoms/Icon";
 import Menu, { MenuTitle } from "components/molecules/Menu";
 import MenuItem from "components/molecules/MenuItem";
-
-import useOutsideClick from "hooks/useOutsideClick";
-
-export const filterConfigs = [
-  {
-    type: "multiSelect",
-    value: "Class",
-    label: "Class",
-    showClear: true,
-    getOptions: (classes) => classes
-  },
-  {
-    type: "multiSelect",
-    value: "Comment Only",
-    label: "Comment Only",
-    showClear: true
-  },
-  {
-    type: "dateRange",
-    value: "Created Date",
-    label: "Created Date",
-    rangeKey: "created",
-    showClear: true
-  },
-  {
-    type: "dateRange",
-    value: "Updated Date",
-    label: "Updated Date",
-    rangeKey: "updated",
-    showClear: true
-  }
-];
+import { filterConfigs } from "./FilterConfigs";
 
 const supportedConfigs = filterConfigs.filter(
   (cfg) => cfg.type === "multiSelect" || cfg.type === "dateRange"
@@ -89,10 +58,6 @@ export default function FilterMenu({
   setFilters
 }) {
   const [classSearch, setClassSearch] = useState("");
-
-  useOutsideClick(menuRef, () => {
-    onClose();
-  });
 
   // multiSelect는 배열로 관리 (키는 config.value)
   const toggleFilterOption = (key, value) => {

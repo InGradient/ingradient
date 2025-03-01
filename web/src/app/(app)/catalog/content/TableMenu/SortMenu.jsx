@@ -8,17 +8,7 @@ import Menu, { MenuTitle } from "components/molecules/Menu";
 import MenuItem from "components/molecules/MenuItem";
 import Select from "components/molecules/Select";
 
-const sortLabels = [
-  { value: "class", label: "Class" },
-  { value: "uploadedAt", label: "Created Time" },
-  { value: "fileName", label: "File Name" },
-  { value: "updatedAt", label: "Updated Time" },
-];
-
-const orderLabels = [
-  { value: "asc", label: "Ascending" },
-  { value: "desc", label: "Descending" },
-];
+import { sortLabels, orderLabels } from "./SortConfigs";
 
 const getSortLabel = (value) => {
   const found = sortLabels.find((item) => item.value === value);

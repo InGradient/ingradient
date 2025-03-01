@@ -17,9 +17,10 @@ import ListView from "../Viewers/ListView";
 import PlotCanvas from "@/app/(app)/catalog/Viewers/PlotCanvas";
 import { ImageGrid } from "@/app/(app)/catalog/Viewers/ImageGrid";
 
-import SortMenu from "./DataTools/SortMenu";
-import GroupByMenu, { groupLabels } from "./DataTools/GroupByMenu";
-import FilterMenu, { filterConfigs } from "./DataTools/FilterMenu";
+import SortMenu from "./TableMenu/SortMenu";
+import GroupByMenu, { groupLabels } from "./TableMenu/GroupByMenu";
+import FilterMenu from "./TableMenu/FilterMenu";
+import { filterConfigs } from "./TableMenu/FilterConfigs";
 
 import { ArrowDownUp, Filter, LayerGroup, Grid, ChartScatter } from "@/components/atoms/Icon";
 import Checkbox from "@/components/atoms/Checkbox";
@@ -29,6 +30,11 @@ import { EmptyMessage } from "@/components/organisms/EmptyMessage";
 
 import { extractUniqueAndRange, filterData, sortData, groupData } from "@/utils/dataProcessing";
 import { handleImageUpload, handleDownload } from "@/utils/fileHandler";
+
+import useOutsideClick from "hooks/useOutsideClick";
+
+import TableMenu from "./TableMenu/TableMenu";
+
 
 // Content.jsx
 const Content = styled.div`
@@ -285,6 +291,11 @@ const ContentSection = ({
   const filteredData = filterData(images, filters);
   const sortedData = sortData(filteredData, sortCriteria);
   const groupedData = groupData(sortedData, groupByOption);
+  
+  useOutsideClick(filterMenuRef, () => {
+    setFilterDropdownVisible(false)
+    setOpenTool(null);
+  });
 
   const getFilterSummaries = () => {
     const summaries = [];
@@ -413,6 +424,7 @@ const ContentSection = ({
         <TableOption>
           <LeftOptions>
             <DataToolsOption>
+              
               <DataToolsContainer>
                 <InteractiveIcon
                   onMouseDown={() => setOpenTool(openTool === "sort" ? null : "sort")}
@@ -442,8 +454,7 @@ const ContentSection = ({
                 {openTool === "filter" && filterSummaries.length === 0 && (
                   <MenuContainer ref={filterMenuRef}>
                     <FilterMenu
-                      onClose={() => setFilterDropdownVisible(false)}
-                      menuRef={filterMenuRef}
+                      onClose={() => {}}
                       activeFilterGroup={activeFilterGroup}
                       setActiveFilterGroup={setActiveFilterGroup}
                       activeClasses={activeClasses}
