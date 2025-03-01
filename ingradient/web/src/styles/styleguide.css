@@ -1,0 +1,138 @@
+/* ============================= */
+/* styleguide.css               */
+/* 모든 공통 디자인 토큰(변수)  */
+/* ============================= */
+
+/* Pretendard 웹폰트 임포트 (CDN 예시) 
+ * 다른 경로의 Pretendard 파일을 사용하셔도 됩니다. 
+ */
+ @import url('https://cdn.jsdelivr.net/npm/pretendard/dist/web/static/pretendard.css');
+
+ /* 1. 색상 변수 (CSS Custom Properties) */
+ :root {
+   /* 예: 경고, 기본, 흰색, 검정 */
+   --color-warning: #D32F2F;
+   --color-white: #FFFFFF;
+   --color-black: #000000;
+ 
+   /* Neutral (light → dark) */
+   --neutral-50:  #FAFAFA;
+   --neutral-100: #F5F5F5;
+   --neutral-200: #EEEEEE;
+   --neutral-300: #E0E0E0;
+   --neutral-400: #BDBDBD;
+   --neutral-500: #9E9E9E;
+   --neutral-600: #757575;
+   --neutral-700: #616161;
+   --neutral-800: #424242;
+   --neutral-900: #212121;
+ 
+   /* Primary (Blue) scale */
+   --blue-50:  #E6F0FF;
+   --blue-100: #CCE1FF;
+   --blue-150: #B3D2FF;
+   --blue-200: #99C3FF;
+   --blue-300: #66A6FF;
+   --blue-400: #3388FF;
+   --blue-500: #006AFF;
+   --blue-600: #0055CC;
+   --blue-700: #004099;
+   --blue-800: #002A66;
+   --blue-850: #00204D;
+   --blue-900: #001533;
+   --blue-950: #000B1A;
+ 
+   /* 2. 폰트 관련 변수 */
+   --font-family-base: 'Pretendard', -apple-system, BlinkMacSystemFont, 
+                       'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+   
+   /* 기본 폰트 사이즈(16px), 폰트 스케일(1.25) 등 */
+   --base-font-size: 16px;
+   --scale-factor: 1.25;
+ 
+   /* 3. 폰트 사이즈 (px/rem)
+    * 디자인 시스템에서 지정해준 수치를 변수로 보관해두면 편합니다.
+    */
+   --font-size-61px: 3.812rem; /* 61px / 16 = 3.8125rem */
+   --font-size-49px: 3.062rem;
+   --font-size-39px: 2.438rem;
+   --font-size-31px: 1.938rem;
+   --font-size-25px: 1.562rem;
+   --font-size-20px: 1.250rem;
+   --font-size-16px: 1.000rem;
+   --font-size-13px: 0.812rem;
+   --font-size-10px: 0.625rem;
+ }
+ 
+ /* 4. 타이포그래피 유틸리티 클래스 예시 
+  * 실제 프로젝트 특성에 맞추어 h1 ~ h6 / paragraph / caption 등
+  * 혹은 .text-xs, .text-sm 등으로 네이밍을 바꾸어 사용하셔도 됩니다.
+  */
+.text-61 {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-61px);
+}
+.text-49 {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-49px);
+}
+.text-39 {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-39px);
+}
+.text-31 {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-31px);
+}
+.text-25 {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-25px);
+}
+.text-20 {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-20px);
+}
+.text-16 {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-16px);
+}
+.text-13 {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-13px);
+}
+.text-10 {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-10px);
+}
+
+/* 3. 폰트 굵기 유틸리티 (font-weight) */
+.font-bold {
+  font-weight: 700;
+}
+.font-medium {
+  font-weight: 500;
+}
+.font-regular {
+  font-weight: 400;
+}
+ 
+ /* 5. 컬러 유틸리티 클래스 예시 */
+ .bg-white {
+   background-color: var(--color-white);
+ }
+ .bg-black {
+   background-color: var(--color-black);
+ }
+ .bg-warning {
+   background-color: var(--color-warning);
+ }
+ .bg-blue-500 {
+   background-color: var(--blue-500);
+ }
+ .text-gray-900 {
+   color: var(--gray-900);
+ }
+ .text-blue-600 {
+   color: var(--blue-600);
+ }
+ 

@@ -1,0 +1,10 @@
+export { default as Grid } from './icons/grid';
+export { default as ChartScatter } from './icons/chart-scatter';
+export { default as MagnifyingGlass } from './icons/magnifying-glass';
+export { default as DashedBox } from './icons/dashed-box';
+export { default as Filter } from './icons/filter';
+export { default as ArrowDownUp } from './icons/arrow-down-up';
+export { default as LayerGroup } from './icons/layer-group';
+export { default as ArrowsToLine } from './icons/arrows-to-line';
+export { default as XMark } from './icons/xmark';
+export { default as Trash } from './icons/trash';

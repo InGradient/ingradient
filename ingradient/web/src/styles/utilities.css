@@ -1,0 +1,155 @@
+/* ============================= */
+/* utilities.css                */
+/* 공통 유틸리티 스타일          */
+/* ============================= */
+
+/* 1. Flexbox */
+.flex {
+  display: flex;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-wrap {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+/* 2. Grid */
+.grid {
+  display: grid;
+}
+
+.grid-center {
+  display: grid;
+  place-items: center;
+}
+
+.grid-columns-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-columns-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.grid-gap {
+  gap: 1rem;
+}
+
+/* 3. Text Alignment */
+.text-left {
+  text-align: left;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+/* 4. Spacing Utilities */
+/* Margin */
+.m-0 {
+  margin: 0 !important;
+}
+
+.mt-1 {
+  margin-top: 0.25rem !important;
+}
+
+.mb-1 {
+  margin-bottom: 0.25rem !important;
+}
+
+.ml-1 {
+  margin-left: 0.25rem !important;
+}
+
+.mr-1 {
+  margin-right: 0.25rem !important;
+}
+
+/* Padding */
+.p-0 {
+  padding: 0 !important;
+}
+
+.pt-1 {
+  padding-top: 0.25rem !important;
+}
+
+.pb-1 {
+  padding-bottom: 0.25rem !important;
+}
+
+.pl-1 {
+  padding-left: 0.25rem !important;
+}
+
+.pr-1 {
+  padding-right: 0.25rem !important;
+}
+
+/* 5. Utility Overrides for Text Colors (Optional) */
+/* These refer directly to styleguide.css variables */
+.text-primary {
+  color: var(--blue-500);
+}
+
+.text-secondary {
+  color: var(--gray-600);
+}
+
+.text-warning {
+  color: var(--color-warning);
+}
+
+.text-white {
+  color: var(--color-white);
+}
+
+.text-black {
+  color: var(--color-black);
+}
+
+/* 6. Utility Overrides for Background Colors */
+/* Reference styleguide.css color variables */
+.bg-primary {
+  background-color: var(--blue-500);
+}
+
+.bg-secondary {
+  background-color: var(--gray-100);
+}
+
+.bg-warning {
+  background-color: var(--color-warning);
+}
+
+.bg-white {
+  background-color: var(--color-white);
+}
+
+.bg-black {
+  background-color: var(--color-black);
+}

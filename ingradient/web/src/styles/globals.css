@@ -1,0 +1,263 @@
+/* ============================= */
+/* global.css                   */
+/* 전역 스타일(Reset + 기본)    */
+/* ============================= */
+
+/* 0. Reset or Normalize (간단 버전) */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* 1. 범용적인 이름으로 매핑 */
+:root {
+  /* 파랑색 계열 (Accent) */
+  --accent-light: var(--blue-100);;  /* 밝은 파랑색 */
+  --accent: var(--blue-500);        /* 기본 파랑색 */
+  --accent-dark: var(--blue-700);   /* 어두운 파랑색 */
+  --accent-hover: var(--blue-400);  /* hover 상태 파랑색 */
+  --accent-active: var(--blue-500); /* 활성화된 파랑색 */
+
+  /* 회색 계열 (Neutral) */
+  --neutral-light: var(--neutral-100);  /* 밝은 회색 */
+  --neutral: var(--neutral-500);        /* 기본 회색 */
+  --neutral-dark: var(--neutral-700);   /* 진한 회색 */
+  --neutral-hover: var(--neutral-300);  /* hover 상태 회색 */
+  --neutral-muted: var(--neutral-400);  /* 덜 강조된 회색 */
+
+  /* 검은색 계열 (Dark) */
+  --dark-light: var(--neutral-600);     /* 연한 검은색 */
+  --dark: var(--neutral-800);           /* 기본 검은색 */
+  --dark-hover: var(--neutral-700);     /* hover 상태 검은색 */
+  --dark-active: var(--neutral-900);    /* 클릭/활성화된 검은색 */
+  --dark-muted: var(--neutral-500);     /* 덜 강조된 검은색 */
+
+  /* 배경 관련 (Background) */
+  --background-light: var(--color-white); /* 밝은 배경 (흰색) */
+  --background-dark: var(--color-black); /* 어두운 배경 (검은색) */
+  --background-muted: var(--neutral-100); /* 중립적인 밝은 회색 배경 */
+  --background-overlay: var(--blue-50); /* 투명한 검은색 오버레이 */
+
+  --success: var(--success);        /* 성공 색상 */
+  --error: var(--color-warning);            /* 에러 색상 */
+  --warning: var(--color-warning);        /* 경고 색상 */
+}
+
+/* 2. HTML, Body 기본 설정 */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 3. Heading 태그 기본 스타일 */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 500; /* 일단 Bold */
+  line-height: 1.2;
+  font-family: var(--font-family-base);
+  color: var(--gray-900);
+}
+
+/* 디자인 예시대로 크기를 맞추고 싶다면 아래처럼 Heading에 적용해도 됩니다 */
+h1 {
+  font-size: var(--font-size-25px); /* 올바르게 정의된 font-size 변수 */
+  font-weight: 700;                /* font-weight 변수는 숫자로 사용 가능 */
+}
+h2 { font-size: var(--font-size-20px); }
+h3 { font-size: var(--font-size-16px); }
+h4 { font-size: var(--font-size-25px); }
+h5 { font-size: var(--font-size-13px); }
+h6 { font-size: var(--font-size-10px); }
+
+body {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-13px);
+  font-weight: 400;
+  color: var(--color-black);
+  background-color: var(--gray-50);
+  line-height: 1.5;
+}
+
+
+/* 4. 링크 기본 스타일 */
+a {
+  color: var(--blue-500);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* 5. 버튼 초기화(간단 예시) */
+button {
+  cursor: pointer;
+  background-color: var(--blue-500);
+  color: var(--color-white);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  height: 40px;
+}
+
+button:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+  background-color: var(--background-dark);
+}
+
+button.outlined {
+  background-color: transparent;
+  border: 1px solid var(--outlined-color, #D0DAE8);
+  color: var(--outlined-color, #000);
+  border-radius: 8px;
+  padding: 8px 16px;
+  height: 40px;
+  cursor: pointer;
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+button.outlined.small {
+  height: 32px;
+  padding: 4px 12px; /* 필요에 따라 조정 */
+}
+
+button.outlined:hover {
+  background-color: var(--neutral-100);
+  border-color: var(--outlined-color, #D0DAE8);
+  color: var(--outlined-color, #D0DAE8);
+}
+
+/* Icon 버튼 스타일 */
+button.icon {
+  width: 32px;
+  height: 32px;
+  padding: 4px;
+  background-color: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-black);
+}
+
+button.icon:hover {
+  background-color: var(--neutral-100);
+  border-radius: 8px;
+}
+
+button.icon:disabled {
+  color: var(--neutral-300);
+  background-color: transparent;
+}
+
+/* 기본 input text 스타일: 아랫칸만 */
+input[type="text"] {
+  /* width: 100%; */
+  padding: 8px;
+  border: none;
+  border-bottom: 1px solid var(--neutral-muted);
+  background-color: var(--background-light);
+  color: var(--dark);
+  font-size: var(--font-size-13px);
+  outline: none;
+  transition: border-color 0.3s ease-in-out;
+}
+
+/* 포커스 시 아랫칸 색상 변경 (underline 전용) */
+input[type="text"]:focus {
+  border-bottom-color: var(--accent-active);
+  box-shadow: 0 1px 0 0 var(--accent-light);
+}
+
+/* outlined 스타일이 적용된 input */
+input.outlined[type="text"] {
+  border: 1px solid var(--neutral-muted);
+  border-radius: 4px;
+  /* padding, background-color 등은 그대로 유지 */
+}
+
+/* outlined input 포커스 시 기존 스타일 적용 */
+input.outlined[type="text"]:focus {
+  border-color: var(--accent-active);
+  box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+/* Input 비활성화 상태 (text 타입만 적용) */
+input[type="text"]:disabled {
+  background-color: var(--neutral-light); /* 비활성화된 배경색 */
+  color: var(--neutral-muted); /* 비활성화된 텍스트 색상 */
+  cursor: not-allowed; /* 포인터 변경 */
+  border-color: var(--neutral-muted); /* 비활성화된 테두리 색상 */
+}
+
+/* Input 에러 상태 (text 타입만 적용) */
+input.error[type="text"] {
+  border-color: var(--error); /* 에러 테두리 색상 */
+  background-color: var(--background-light); /* 에러 배경 유지 */
+}
+
+/* Input hover 스타일 (text 타입만 적용) */
+input[type="text"]:hover:not(:disabled):not(:focus) {
+  border-color: var(--neutral); /* hover 시 테두리 색상 */
+}
+
+/* Radio 타입 Input 스타일 */
+input[type="radio"] {
+  accent-color: var(--accent-active); /* Radio 선택 색상 */
+  cursor: pointer; /* 커서 모양 변경 */
+  width: auto; /* 기본 너비를 유지 */
+  height: auto; /* 기본 높이를 유지 */
+  margin: 4px; /* 필요한 경우 여백 추가 */
+  transition: transform 0.2s ease-in-out; /* 선택 시 부드러운 애니메이션 */
+}
+
+/* Radio hover 효과 */
+input[type="radio"]:hover {
+  transform: scale(1.1); /* Hover 시 크기 약간 확대 */
+}
+
+/* Radio focus 효과 */
+input[type="radio"]:focus {
+  outline: 2px solid var(--accent-active); /* 포커스 시 아웃라인 강조 */
+  outline-offset: 2px; /* 아웃라인과 간격 추가 */
+}
+
+/* 기본 input date 스타일: 아랫칸만 */
+input[type="date"] {
+  /* width: 100%; */
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  border-bottom: 1px solid var(--neutral-muted);
+  background-color: var(--background-light);
+  color: var(--dark);
+  font: inherit;
+  transition: border-color 0.3s ease-in-out;
+}
+
+/* 포커스 시 아랫칸 색상 변경 (underline 전용) for date */
+input[type="date"]:focus {
+  border-bottom-color: var(--accent-active);
+  box-shadow: 0 1px 0 0 var(--accent-light);
+}
+
+/* outlined 스타일이 적용된 input date */
+input.outlined[type="date"] {
+  border: 1px solid var(--neutral-muted);
+  border-radius: 4px;
+  /* padding, background-color 등은 그대로 유지 */
+}
+
+/* outlined input date 포커스 시 기존 스타일 적용 */
+input.outlined[type="date"]:focus {
+  border-color: var(--accent-active);
+  box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+img {
+  user-select: none;
+  -webkit-user-drag: none;
+  user-drag: none;
+}

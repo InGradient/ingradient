@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "baseUrl": "src",                  // src를 기본 루트로 설정
+    "paths": {
+      "@/app/*": ["app/*"],            // app 디렉토리
+      "@/styles/*": ["styles/*"],      // 스타일 디렉토리
+      "@/components/*": ["components/*"], // 재사용 컴포넌트
+      "@/hooks/*": ["hooks/*"],        // 커스텀 훅
+      "@/utils/*": ["utils/*"],        // 유틸리티 함수
+      "@/services/*": ["services/*"],  // API 서비스 호출
+      "@/contexts/*": ["contexts/*"],  // Context API 관련 파일
+      "@/assets/*": ["assets/*"],      // 정적 파일 (이미지, 폰트 등)
+      "@/state/*": ["state/*"],      // 상태 관리 (Redux 등)
+      "@/constants/*": ["constants/*"],// 상수 정의
+      "@/lib/*": ["lib/*"],            // 라이브러리
+      "@/config/*": ["config/*"],      // 환경 설정
+    }
+  },
+  "exclude": ["node_modules", "build"]
+}
