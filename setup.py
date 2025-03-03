@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="ingradient",
-    version="0.1.0",
+    version="0.0.1",
     packages=find_packages(),
     install_requires=[
         "fastapi",
@@ -13,7 +13,7 @@ setup(
             "ingradient = ingradient.cli:main",
         ],
     },
-    include_package_data=True,  # 추가
+    include_package_data=True,
     package_data={
         "ingradient": ["web/**/*"],  # 웹앱 폴더 포함
     },

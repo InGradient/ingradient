@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useMemo } from "react";
 import styled from "styled-components";
+import axios from 'axios';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChevronRight,
@@ -32,9 +33,6 @@ import { extractUniqueAndRange, filterData, sortData, groupData } from "@/utils/
 import { handleImageUpload, handleDownload } from "@/utils/fileHandler";
 
 import useOutsideClick from "hooks/useOutsideClick";
-
-import TableMenu from "./TableMenu/TableMenu";
-
 
 // Content.jsx
 const Content = styled.div`
@@ -323,7 +321,7 @@ const ContentSection = ({
       }
     });
     return summaries;
-  };  
+  };
 
   const filterSummaries = getFilterSummaries();
 
@@ -332,6 +330,8 @@ const ContentSection = ({
     try {
       // This returns the array of newly created objects
       const newFiles = await handleImageUpload(files);
+
+      console.log("newFiles", newFiles);
 
       // Phase 1: merge into your state
       setImageFiles((prev) => [...prev, ...newFiles]);
@@ -424,7 +424,7 @@ const ContentSection = ({
         <TableOption>
           <LeftOptions>
             <DataToolsOption>
-              
+
               <DataToolsContainer>
                 <InteractiveIcon
                   onMouseDown={() => setOpenTool(openTool === "sort" ? null : "sort")}
@@ -511,7 +511,6 @@ const ContentSection = ({
                 title="Upload Images"
                 acceptedFileType="image/*"
                 files={imageFiles}
-                // onFilesDrop={(files) => setImageFiles(files)}
                 onFilesDrop={onImageUpload} 
                 onClose={() => {
                   setImageUploadModalVisible(false);
@@ -638,10 +637,7 @@ const ContentSection = ({
             {groupByOption && (
               <SummaryButton
                 $isActive={isGroupByDropdownVisible}
-                onClick={() => {
-                  setOpenTool(openTool === "group" ? null : "group");
-                  // setGroupByDropdownVisible(true);
-                }}
+                onClick={() => setOpenTool(openTool === "group" ? null : "group")}
               >
                 <span>{findGroupLabel(groupByOption)}</span>
                 <FontAwesomeIcon icon={faChevronDown} style={{ marginLeft: "8px" }} />

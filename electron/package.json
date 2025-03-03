@@ -1,0 +1,46 @@
+{
+  "name": "ingradient-desktop",
+  "version": "0.0.1",
+  "description": "Ingradient Desktop App",
+  "author": {
+    "name": "June Lee",
+    "email": "info@ingradient"
+  },
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "electron": "^34.3.0",
+    "electron-builder": "^24.3.0",
+    "electron-packager": "^17.0.0"
+  },
+  "build": {
+    "appId": "com.ingradient.desktop",
+    "productName": "Ingradient",
+    "files": [
+      "**/*",
+      "../web/.next/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "icons/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "icons/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "icons/"
+    }
+  }
+}

@@ -124,24 +124,21 @@ export default function FilterMenu({
   const activeConfig = supportedConfigs.find((cfg) => cfg.value === activeFilterGroup);
   const activeGroupHasValue = activeConfig ? hasFilterValue(activeConfig.value, activeConfig) : false;
 
-
   return (
     <Menu ref={menuRef} width="350px">
       <MenuTitle>
         <h5 style={{ color: "var(--neutral)" }}>
           {activeConfig ? activeConfig.label : "Filter Options"}
         </h5>
-        {activeConfig && activeConfig.showClear && (
+        {activeConfig && activeGroupHasValue && (
           <button
             className="icon"
             onClick={() => {
-              if (activeGroupHasValue) {
-                clearFilter(activeConfig.value, activeConfig);
-                onClose();
-              }
+              clearFilter(activeConfig.value, activeConfig);
+              onClose();
             }}
           >
-            <Trash color={activeGroupHasValue ? "red" : "grey"} />
+            <Trash color="red" />
           </button>
         )}
       </MenuTitle>
@@ -169,8 +166,8 @@ export default function FilterMenu({
                 onChange={(e) => setClassSearch(e.target.value)}
               />
             </SearchContainer>
-            {activeConfig
-              .getOptions(activeClasses)
+
+            {activeClasses
               .filter(
                 (item) =>
                   item.name.toLowerCase().includes(classSearch.toLowerCase()) &&

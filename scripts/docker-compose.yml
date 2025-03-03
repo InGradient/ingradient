@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  server:
+    build: .
+    container_name: ingradient_server
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./server:/app
+    environment:
+      - ENV=production
+
+  web:
+    image: node:16
+    container_name: ingradient_web
+    working_dir: /app
+    volumes:
+      - ./web:/app
+    ports:
+      - "3000:3000"
+    command: ["npm", "run", "dev"]

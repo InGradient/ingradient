@@ -3,6 +3,8 @@
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { v4 as uuidv4 } from "uuid";
+import axios from "axios";
+import { SERVER_BASE_URL } from "@/config";
 
 /**
  * Converts a File object to a DataURL.
@@ -26,13 +28,15 @@ export function fileToDataURL(file) {
 export function getImageSize(dataURL) {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onload = () =>
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
     img.onerror = reject;
     img.src = dataURL;
   });
 }
 
 /**
+ * (이전 방식: 파일 중복 체크 및 시뮬레이션 업로드)
  * Handles file upload simulation with duplicate check.
  * @param {Object} params - The parameters for file upload.
  * @param {FileList|Array} params.files - Files to be uploaded.
@@ -54,7 +58,8 @@ export const handleFileUpload = ({ files, type, errorMessages, setState, existin
   const uniqueFiles = uploadedFiles.filter(({ file }) => {
     const isDuplicate = existingFiles.some(
       (existing) =>
-        existing.file.name === file.name && existing.file.lastModified === file.lastModified
+        existing.file.name === file.name &&
+        existing.file.lastModified === file.lastModified
     );
     if (isDuplicate) {
       setState((prev) => [
@@ -93,25 +98,50 @@ export const handleFileUpload = ({ files, type, errorMessages, setState, existin
 };
 
 /**
- * Processes image files by converting each to a DataURL, then extracting its dimensions.
- * Returns an array of image objects.
+ * Handles image upload by sending each file to the backend API.
+ * For each file, it optionally extracts its dimensions and then posts the file.
  * @param {FileList|Array} files - The image files.
- * @returns {Promise<Array>} New image objects with width, height, and other metadata.
+ * @returns {Promise<Array>} Array of image objects returned from the server.
  */
 export async function handleImageUpload(files) {
-  const filePromises = Array.from(files).map(async (file) => {
+  const uploadPromises = Array.from(files).map(async (file) => {
+    // Optional: compute file preview dimensions on the client
     const dataURL = await fileToDataURL(file);
     const { width, height } = await getImageSize(dataURL);
-    return {
-      file,
-      status: "pending",
-      id: uuidv4(),
-      width,
-      height,
-      filename: file.name,
-    };
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      // POST the file to the backend API
+      const res = await axios.post(`${SERVER_BASE_URL}/upload-image`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      
+      // 반환된 정보와 클라이언트 계산 정보를 합쳐서 객체 생성
+      return {
+        id: res.data.filename || uuidv4(), // 백엔드에서 filename을 id로 사용
+        file,
+        status: "success",
+        width,
+        height,
+        filename: file.name,
+        url: `${SERVER_BASE_URL}${res.data.location}`, // 예: http://localhost:8000/uploads/파일명
+      };
+    } catch (error) {
+      return {
+        id: file.name,
+        file,
+        status: "failure",
+        width,
+        height,
+        filename: file.name,
+        error: error.message,
+      };
+    }
   });
-  return await Promise.all(filePromises);
+
+  return await Promise.all(uploadPromises);
 }
 
 /**

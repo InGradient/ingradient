@@ -36,8 +36,8 @@ export default function ClientLayout({ children }) {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setIsLoaded(true); // 1초 후 로딩 완료
-    }, 1000);
+      setIsLoaded(true);
+    }, 1);
     return () => clearTimeout(timer);
   }, []);
 
