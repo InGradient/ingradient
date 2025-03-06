@@ -185,8 +185,10 @@ export default function PropertySection({
     setSelectedButton((prev) => (prev === button ? null : button));
   };
 
-  const descObj = lastClickedImage.properties.find(
-    (prop) => prop.label === "Description"
+  console.log("lastClickedImage", lastClickedImage)
+  console.log("images", images)
+  const descObj = Object.entries(lastClickedImage.properties).find(
+    ([key, prop]) => key === "Description"
   );
   const descriptionValue = descObj ? descObj.value : "";
 

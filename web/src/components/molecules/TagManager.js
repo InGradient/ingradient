@@ -221,8 +221,12 @@ const TagManager = ({
         imageIds: Array.from(new Set([...classObj.imageIds, ...selectedImageIds])),
         datasetIds: Array.from(new Set([...classObj.datasetIds, ...selectedDatasetIds])),
       };
+
+      console.log("Input Class API:", updatedClassObj);
   
       saveClass(updatedClassObj); // 업데이트된 클래스 전달
+
+      console.log("Completed Save Class:", updatedClassObj);
   
       // 기존 태그 상태 업데이트
       const updatedTags = tags.map((tag) =>

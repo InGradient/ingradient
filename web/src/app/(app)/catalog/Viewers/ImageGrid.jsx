@@ -50,16 +50,20 @@ const ArrowContainer = styled.div`
   cursor: pointer;
 `;
 
-/**
- * (1) 개별 이미지 아이템을 메모화하기 위한 컴포넌트
- */
+const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL;
+
 const MemoizedImageItem = React.memo(
-  function MemoizedImageItem({
-    item,
-    isSelected,
-    onClick,
-    onDoubleClick,
-  }) {
+  function MemoizedImageItem({ item, isSelected, onClick, onDoubleClick }) {
+    // ✅ 서버 주소 + file_location 조합
+    const imageURL = item.fileLocation
+      ? `${SERVER_BASE_URL}/${item.fileLocation}`
+      : null;
+
+    // ✅ 서버 주소 + thumbnail_location 조합
+    const thumbnailURL = item.thumbnailLocation
+      ? `${SERVER_BASE_URL}/${item.thumbnailLocation}`
+      : null;
+
     return (
       <div
         style={{ width: "100%", overflow: "hidden", transition: "transform 0.2s" }}
@@ -74,8 +78,8 @@ const MemoizedImageItem = React.memo(
       >
         <Card
           className="card-instance"
-          imageURL={item.imageURL}
-          thumbnailURL={item.thumbnailURL}
+          imageURL={imageURL} // ✅ 변환된 URL 사용
+          thumbnailURL={thumbnailURL} // ✅ 변환된 썸네일 URL 사용
           fileName={item.filename}
           imageDescription={item.properties?.description}
           isSelected={isSelected}

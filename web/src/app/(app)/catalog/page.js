@@ -21,6 +21,7 @@ const LayoutContainer = styled.div`
 
 export default function CatalogPage() {
 
+  const loadInitialData = useMyStore((state) => state.loadInitialData);
   const datasets = useMyStore((state) => state.datasets);
   const classes = useMyStore((state) => state.classes);
   const images = useMyStore((state) => state.images);
@@ -38,14 +39,16 @@ export default function CatalogPage() {
   const [selectedDatasetIds, setSelectedDatasetIds] = useState([]);
   const [selectedImageIds, setSelectedImageIds] = useState([]);
   const [isImageEditorOpen, setIsImageEditorOpen] = useState(false);
+
+  useEffect(() => {
+    loadInitialData();
+  }, []);
   
   const activeImages = useMemo(() => {
     const activeImagesDict = {};
     selectedDatasetIds.forEach((datasetId) => {
       Object.entries(images).forEach(([id, img]) => {
-        if (img.datasetIds.includes(datasetId)) {
-          activeImagesDict[id] = img;
-        }
+        activeImagesDict[id] = img;
       });
     });
     return activeImagesDict;
@@ -198,7 +201,7 @@ export default function CatalogPage() {
 
       <ContentSection
         images={activeImages}
-        createImage={createImage}
+        saveImage={saveImage}
         deleteImage={deleteImage}
         selectedDatasetIds={selectedDatasetIds}
         activeClasses={activeClasses}

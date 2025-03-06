@@ -5,6 +5,7 @@ import { saveAs } from "file-saver";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
 import { SERVER_BASE_URL } from "@/config";
+import { uploadFile } from "@/lib/api";
 
 /**
  * Converts a File object to a DataURL.
@@ -104,44 +105,26 @@ export const handleFileUpload = ({ files, type, errorMessages, setState, existin
  * @returns {Promise<Array>} Array of image objects returned from the server.
  */
 export async function handleImageUpload(files) {
-  const uploadPromises = Array.from(files).map(async (file) => {
-    // Optional: compute file preview dimensions on the client
-    const dataURL = await fileToDataURL(file);
-    const { width, height } = await getImageSize(dataURL);
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      // POST the file to the backend API
-      const res = await axios.post(`${SERVER_BASE_URL}/upload-image`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      
-      // 반환된 정보와 클라이언트 계산 정보를 합쳐서 객체 생성
-      return {
-        id: res.data.filename || uuidv4(), // 백엔드에서 filename을 id로 사용
+  return Promise.all(
+    Array.from(files).map(async (file) => {
+      const baseData = {
+        id: uuidv4(),
         file,
-        status: "success",
-        width,
-        height,
         filename: file.name,
-        url: `${SERVER_BASE_URL}${res.data.location}`, // 예: http://localhost:8000/uploads/파일명
       };
-    } catch (error) {
-      return {
-        id: file.name,
-        file,
-        status: "failure",
-        width,
-        height,
-        filename: file.name,
-        error: error.message,
-      };
-    }
-  });
 
-  return await Promise.all(uploadPromises);
+      try {
+        const dataURL = await fileToDataURL(file);
+        const { width, height } = await getImageSize(dataURL);
+
+        const uploadResponse = await uploadFile(file);
+
+        return { ...baseData, status: "success", width, height, ...uploadResponse };
+      } catch (error) {
+        return { ...baseData, status: "failure", error: error.message };
+      }
+    })
+  );
 }
 
 /**

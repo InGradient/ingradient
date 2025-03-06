@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useMemo } from "react";
 import styled from "styled-components";
-import axios from 'axios';
+
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChevronRight,
@@ -250,7 +250,7 @@ const findGroupLabel = (optionValue) => {
 
 const ContentSection = ({
   images,
-  createImage,
+  saveImage,
   deleteImage,
   selectedDatasetIds,
   activeClasses,
@@ -331,31 +331,20 @@ const ContentSection = ({
       // This returns the array of newly created objects
       const newFiles = await handleImageUpload(files);
 
-      console.log("newFiles", newFiles);
+      console.log("Newly uploaded files:", newFiles);
 
       // Phase 1: merge into your state
       setImageFiles((prev) => [...prev, ...newFiles]);
 
       // Phase 2: set each file's status to "success" or "failure"
       for (const fileObj of newFiles) {
-        try {
-          setImageFiles((prev) =>
-            prev.map((f) =>
-              f.id === fileObj.id
-                ? { ...f, status: "success" }
-                : f
-            )
-          );
-        } catch (err) {
-          // If there's an error, mark "failure"
-          setImageFiles((prev) =>
-            prev.map((f) =>
-              f.id === fileObj.id
-                ? { ...f, status: "failure", error: err.message }
-                : f
-            )
-          );
-        }
+        setImageFiles((prev) =>
+          prev.map((f) =>
+            f.id === fileObj.id
+              ? { ...f, status: fileObj.status, error: fileObj.error }
+              : f
+          )
+        );
       }
     } catch (err) {
       console.error("Image upload error:", err);
@@ -366,14 +355,25 @@ const ContentSection = ({
     await handleDownload(sortedData, activeClasses);
   };
 
-  const handleConfirmUpload = (uploadedFiles, clearFiles) => {
-    const successfulFiles = uploadedFiles.filter((file) => file.status === "success");
-
-    createImage(successfulFiles, selectedDatasetIds, "user1");
-
+  const handleConfirmUpload = async (uploadedFiles, clearFiles) => {
+    const successfulFiles = uploadedFiles
+      .filter((file) => file.status === "success")
+      .map((file) => ({
+        ...file,
+        dataset_ids: selectedDatasetIds,
+        user_id: "user1",
+      }));
+  
+    console.log("successfulFiles:", successfulFiles);
+  
+    // ✅ 하나씩 `saveImage` 호출
+    for (const file of successfulFiles) {
+      await saveImage(file);
+    }
+  
     clearFiles();
     setImageUploadModalVisible(false);
-  };
+  };  
 
   const handleSelectAllImages = () => {
     setSelectedImageIds(

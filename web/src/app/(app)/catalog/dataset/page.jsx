@@ -154,14 +154,12 @@ export default function DatasetSection({
   const [newDatasetName, setNewDatasetName] = useState("");
   const menuRef = useRef();
 
-
   useEffect(() => {
-    // 첫 번째 데이터셋 선택
     const datasetArray = Object.values(datasets);
-    if (datasetArray.length > 0 && selectedDatasetIds.length === 0) {
-      setSelectedDatasetIds([datasetArray[0].id]); // 첫 번째 데이터셋 선택
+    if (datasetArray.length > 0 && (!selectedDatasetIds || selectedDatasetIds.length === 0)) {
+      setSelectedDatasetIds([datasetArray[0].id]);
     }
-  }, []);
+  }, [datasets, selectedDatasetIds]);  
   
   const toggleDatasetSelection = (id) => {
     if (selectedDatasetIds.includes(id)) {
@@ -208,7 +206,7 @@ export default function DatasetSection({
     setNewDatasetName("");
   };  
 
-  const handleCreateDataset = () => {
+  const handleCreateDataset = async () => {
     if (newDatasetName.trim()) {
       // const newDataset = {
       //   id: Date.now().toString(),
@@ -220,8 +218,10 @@ export default function DatasetSection({
       //   updatedAt: new Date().toISOString(),
       // };
       // const newId = createDataset(newDataset, 'user1');
-      const newId = createDataset(newDatasetName.trim(), 'user1');
-      setSelectedDatasetIds([newId]);
+      const newId = await createDataset(newDatasetName.trim(), 'user1');
+      if (newId) {
+        setSelectedDatasetIds([newId]);
+      }
       setAddDialog(false);
       setNewDatasetName("");
     }

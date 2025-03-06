@@ -8,3 +8,4 @@ export { default as LayerGroup } from './icons/layer-group';
 export { default as ArrowsToLine } from './icons/arrows-to-line';
 export { default as XMark } from './icons/xmark';
 export { default as Trash } from './icons/trash';
+export { default as TriangleExclamation } from './icons/triangle-exclamation';
