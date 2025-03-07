@@ -72,6 +72,12 @@ export async function updateClass(classId, updatedData) {
   return res.data;
 }
 
+export async function upsertClass(classId, updatedData) {
+  console.log("Upsert Class ", classId, updatedData)
+  const res = await axios.post(`/api/classes/${classId}`, updatedData);
+  return res.data;
+}
+
 // [DELETE] Class 삭제
 export async function deleteClass(classId) {
   const res = await axios.delete(`/api/classes/${classId}`);
@@ -85,13 +91,16 @@ export async function deleteClass(classId) {
  */
 
 // [GET] 모든 Image 목록
-export async function listImages() {
-  const res = await axios.get(`/api/images`);
+export async function listImages(datasetIds = []) {
+  const params = {};
+  if (datasetIds.length > 0) {
+    params.dataset_ids = datasetIds;
+  }
+  const res = await axios.get('/api/images', { params });
   return res.data;
 }
 
 export async function upsertImage(imageId, updatedData) {
-  console.log("upsertImage:", imageId, updatedData);
   const res = await axios.post(`/api/images/${imageId}`, updatedData);
   return res.data;
 }

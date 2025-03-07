@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import styled from "styled-components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { 
@@ -180,32 +180,36 @@ export default function PropertySection({
 }) {
   const [selectedButton, setSelectedButton] = useState(null);
   const { startLoading, stopLoading, setProgress, setLoadingStatus } = useLoadingStore();
+  const [description, setDescription] = useState(
+    lastClickedImage.properties?.description || ""
+  );
+  const [memo, setMemo] = useState(lastClickedImage.comment || "")
+
+  useEffect(() => {
+    setDescription(lastClickedImage.properties?.description || "");
+    setMemo(lastClickedImage.comment || "");
+  }, [lastClickedImage]);
 
   const toggleButtonSelection = (button) => {
     setSelectedButton((prev) => (prev === button ? null : button));
   };
 
-  console.log("lastClickedImage", lastClickedImage)
-  console.log("images", images)
-  const descObj = Object.entries(lastClickedImage.properties).find(
-    ([key, prop]) => key === "Description"
-  );
-  const descriptionValue = descObj ? descObj.value : "";
-
-  const handleDescriptionChange = (e) => {
-    const newProperties = lastClickedImage.properties.map((prop) => {
-      if (prop.label === "Description") {
-        return {
-          ...prop,
-          value: e.target.value,
-        };
-      }
-      return prop;
-    });
+  const handleDescriptionBlur = () => {
+    const newProperties = {
+      ...lastClickedImage.properties,
+      description,
+    };
   
     saveImage({
       ...lastClickedImage,
       properties: newProperties,
+    });
+  };
+  
+  const handleMemoBlur = () => {
+    saveImage({
+      ...lastClickedImage,
+      comment: memo,
     });
   };
 
@@ -406,23 +410,18 @@ export default function PropertySection({
           <DetailsWrapper>
             <h3>Description</h3>
             <EditableTextarea
-              value={descriptionValue}
-              onChange={handleDescriptionChange}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              onBlur={handleDescriptionBlur}
             />
           </DetailsWrapper>
 
           <DetailsWrapper>
             <h3>Memo</h3>
             <EditableTextarea
-              value={lastClickedImage.comment || ""}
-              onChange={(e) => {
-                const newComment = e.target.value;
-
-                saveImage({
-                  ...lastClickedImage,
-                  comment: newComment,
-                });
-              }}
+              value={memo}
+              onChange={(e) => setMemo(e.target.value)}
+              onBlur={handleMemoBlur}
             />
           </DetailsWrapper>
 

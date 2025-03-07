@@ -21,7 +21,9 @@ const LayoutContainer = styled.div`
 
 export default function CatalogPage() {
 
-  const loadInitialData = useMyStore((state) => state.loadInitialData);
+  const loadDataset = useMyStore((state) => state.loadDataset);
+  const loadClasses = useMyStore((state) => state.loadClasses)
+  const loadImages = useMyStore((state) => state.loadImages)
   const datasets = useMyStore((state) => state.datasets);
   const classes = useMyStore((state) => state.classes);
   const images = useMyStore((state) => state.images);
@@ -40,8 +42,19 @@ export default function CatalogPage() {
   const [selectedImageIds, setSelectedImageIds] = useState([]);
   const [isImageEditorOpen, setIsImageEditorOpen] = useState(false);
 
+  // console.log("Images", images)
+  // console.log("Dataset", datasets)
+
   useEffect(() => {
-    loadInitialData();
+    loadDataset();
+  }, []);
+
+  useEffect(() => {
+    loadImages(selectedDatasetIds);
+  }, [selectedDatasetIds]);
+
+  useEffect(() => {
+    loadClasses();
   }, []);
   
   const activeImages = useMemo(() => {
@@ -54,12 +67,17 @@ export default function CatalogPage() {
     return activeImagesDict;
   }, [images, selectedDatasetIds]);
 
-  // 선택된 Dataset에 따라 활성화된 Classes
   const activeClasses = useMemo(() => {
-    return Object.values(classes).filter((cls) =>
-      cls.datasetIds.some((datasetId) => selectedDatasetIds.includes(datasetId))
+    const allClasses = selectedDatasetIds.flatMap(
+      (datasetId) => datasets[datasetId]?.classIds || []
     );
-  }, [classes, selectedDatasetIds]);
+  
+    const uniqueClasses = Array.from(new Set(allClasses));
+  
+    return uniqueClasses;
+  }, [datasets, selectedDatasetIds]);
+  
+  
 
   // 사이드바 & Property 섹션 상태
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);

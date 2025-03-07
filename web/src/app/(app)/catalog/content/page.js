@@ -331,8 +331,6 @@ const ContentSection = ({
       // This returns the array of newly created objects
       const newFiles = await handleImageUpload(files);
 
-      console.log("Newly uploaded files:", newFiles);
-
       // Phase 1: merge into your state
       setImageFiles((prev) => [...prev, ...newFiles]);
 
@@ -360,11 +358,10 @@ const ContentSection = ({
       .filter((file) => file.status === "success")
       .map((file) => ({
         ...file,
-        dataset_ids: selectedDatasetIds,
-        user_id: "user1",
+        datasetIds: selectedDatasetIds,
+        userId: "user1",
       }));
   
-    console.log("successfulFiles:", successfulFiles);
   
     // ✅ 하나씩 `saveImage` 호출
     for (const file of successfulFiles) {

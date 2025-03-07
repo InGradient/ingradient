@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { MagnifyingGlass } from "components/atoms/Icon";
 import styled from "styled-components";
-import { image } from "@tensorflow/tfjs";
+import { v4 as uuidv4 } from "uuid";
 
 const Container = styled.div`
   max-width: 500px;
@@ -129,7 +129,7 @@ const TagManager = ({
   const tagStates = useMemo(() => {
     const states = {};
     Object.values(selectedImages).forEach((image) => {
-      const imageClass = image.classId || ""; // `class`를 가져옴
+      const imageClass = image.classIds || "";
       if (imageClass) {
         // 해당 클래스의 상태를 초기화하거나 카운트를 증가시킴
         states[imageClass] = states[imageClass] || { count: 0, total: 0 };
@@ -144,56 +144,48 @@ const TagManager = ({
 
   // activeClasses 기준으로 태그 정보 초기화
   useEffect(() => {
-    const initialTags = activeClasses.map((classObj) => ({
-      id: classObj.id,
-      name: classObj.name,
-      color: classObj.color,
-    }));
-    setTags(initialTags);
-  }, [activeClasses]);
+    setTags(activeClasses);
+  }, [activeClasses]);  
 
-  /**
-   * 태그 클릭 시:
-   * - 이미 선택된 클래스이면 → None ("" 혹은 null)
-   * - 아니라면 해당 클래스로 교체
-   */
   const handleTagClick = useCallback(
     (tag) => {
-      const isSelected = tagStates[tag.id]?.count > 0;
-
       Object.keys(selectedImages).forEach((imageId) => {
         const currentImage = selectedImages[imageId];
-        const updatedClassId = isSelected ? null : tag.id;
+
+        const existingClassIds = currentImage.classIds || [];
+        const isTagIncluded = existingClassIds.includes(tag.id);
   
-        saveImage({
+        const updatedImage = {
           ...currentImage,
           id: imageId,
-          classId: updatedClassId,
-        });
+          classIds: isTagIncluded ? [] : [tag.id],
+        };
+  
+        saveImage(updatedImage);
       });
     },
-    [selectedImages, tagStates, saveImage, image.id]
+    [selectedImages, saveImage]
   );  
-
-  /**
-   * 숫자 키(1~9) 누르면 해당 인덱스의 태그 클릭
-   * - 단일 클래스이므로 로직은 그대로 사용 가능
-   */
+  
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!isInputFocused && /^[1-9]$/.test(e.key)) {
         const index = parseInt(e.key, 10) - 1;
         if (index >= 0 && index < tags.length) {
-          handleTagClick(tags[index]);
+          const tagObj = activeClasses.find((cls) => cls.id === tags[index]);
+          if (tagObj) {
+            handleTagClick(tagObj);
+          }
         }
       }
     };
-
+  
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [handleTagClick, tags, isInputFocused]);
+  }, [handleTagClick, tags, isInputFocused, activeClasses]);
+  
 
   const handleInputChange = (e) => {
     const value = e.target.value;
@@ -203,45 +195,33 @@ const TagManager = ({
     const filteredSuggestions = Object.values(classes).filter(
       (cls) =>
         cls.name.toLowerCase().startsWith(value.toLowerCase()) &&
-        !tags.some((tag) => tag.id === cls.id)
-    );
+        !tags.includes(cls.id)
+    );    
   
     setSuggestions(filteredSuggestions);
-  };  
+  };
 
-  /**
-   * 태그 추가: 이미 있는 class라면 해당 class 사용,
-   *           없는 class라면 새로 생성
-   */
   const handleAddTag = (classObj) => {
     if (classObj?.id) {
       // 기존 클래스 업데이트
       const updatedClassObj = {
         ...classObj,
-        imageIds: Array.from(new Set([...classObj.imageIds, ...selectedImageIds])),
-        datasetIds: Array.from(new Set([...classObj.datasetIds, ...selectedDatasetIds])),
+        imageIds: Array.from(
+          new Set([...(lastClickedImage ? [lastClickedImage.id] : []), ...selectedImageIds])
+        ),
+        datasetIds: Array.from(new Set([...selectedDatasetIds])),
       };
-
-      console.log("Input Class API:", updatedClassObj);
   
-      saveClass(updatedClassObj); // 업데이트된 클래스 전달
-
-      console.log("Completed Save Class:", updatedClassObj);
+      saveClass(updatedClassObj);
   
-      // 기존 태그 상태 업데이트
       const updatedTags = tags.map((tag) =>
         tag.id === classObj.id ? updatedClassObj : tag
       );
       setTags(updatedTags);
-  
-      // 선택된 이미지 업데이트
-      selectedImageIds.forEach((imageId) => {
-        saveImage(imageId, { class: classObj.id });
-      });
     } else if (classObj?.name) {
       // 새로운 클래스 생성
       const newClass = {
-        id: `class-${Date.now()}`,
+        id: uuidv4(),
         name: classObj.name,
         color: generatePastelColor(),
         imageIds: Array.from(
@@ -250,13 +230,8 @@ const TagManager = ({
         datasetIds: Array.from(new Set([...selectedDatasetIds])),
       };
   
-      saveClass(newClass); // 새 클래스 전달
-      setTags([...tags, newClass]);
-  
-      // 선택된 이미지 업데이트
-      selectedImageIds.forEach((imageId) => {
-        saveImage(imageId, { class: newClass.id });
-      });
+      saveClass(newClass);
+      setTags([...tags, newClass.id]);
     }
   
     setInputValue("");
@@ -279,6 +254,7 @@ const TagManager = ({
     }
   };
 
+  console.log("ActiveClasses", activeClasses)
   return (
     <Container>
       <InputContainer>
@@ -317,26 +293,29 @@ const TagManager = ({
         </SuggestionsList>
       )}
       <TagList>
-        {tags.map((tag) => {
-          const state = tagStates[tag.id] || { count: 0 };
+        {tags.map((tagId) => {
+          // 예시: activeClasses가 배열이라면:
+          const tagObj = classes[tagId] || {};
+          const state = tagStates[tagId] || { count: 0 };
           const isSelected = state.count > 0;
 
           return (
             <TagItem
-              key={tag.id}
-              color={tag.color}
+              key={tagId}
+              color={tagObj.color}
               isSelected={isSelected}
+              onClick={() => handleTagClick(tagObj)}
             >
-              {/* TagContent 클릭 시 클래스 선택 */}
-              <TagContent onClick={() => handleTagClick(tag)}>
-                <TagCircle color={tag.color} />
-                <span>{tag.name}</span>
+              <TagContent>
+                <TagCircle color={tagObj.color} />
+                <span>{tagObj.name}</span>
                 {state.count > 1 && <span>({state.count})</span>}
               </TagContent>
-
-              {/* X 버튼 클릭 시 태그 제거 */}
               <TagRemove
-                onClick={() => handleRemoveTag(tag.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemoveTag(tagId);
+                }}
               >
                 <FontAwesomeIcon icon={faXmark} />
               </TagRemove>
