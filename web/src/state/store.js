@@ -95,7 +95,7 @@ export const useMyStore = create((set, get) => ({
       img.datasetIds.some((datasetId) => selectedDatasetIds.includes(datasetId))
     );
   },
-  
+
   /**
    * ===================
    *  DATASET
@@ -155,41 +155,46 @@ export const useMyStore = create((set, get) => ({
   },
   
   deleteDataset: async (datasetId) => {
-    // 1) 서버에 삭제 요청
     try {
+      // 1️⃣ 서버에 삭제 요청
       const res = await apiDeleteDataset(datasetId);
       if (res.error) {
         console.error("Delete dataset failed:", res.error);
         return;
       }
-      // 2) 삭제 성공 → 로컬 state에서 제거
+  
+      // 2️⃣ 삭제 성공 → 로컬 state에서 dataset 관련 데이터 정리
       set((state) => {
         const ds = state.datasets[datasetId];
         if (!ds) return state;
-
+  
         const newClasses = { ...state.classes };
         const newImages = { ...state.images };
-
-        ds.classIds.forEach((clsId) => {
-          if (newClasses[clsId]) {
+  
+        // ✅ dataset을 포함하는 classes에서 datasetId 제거
+        Object.keys(newClasses).forEach((clsId) => {
+          if (newClasses[clsId].datasetIds) {
             newClasses[clsId] = {
               ...newClasses[clsId],
               datasetIds: newClasses[clsId].datasetIds.filter((id) => id !== datasetId),
             };
           }
         });
-        ds.imageIds.forEach((imgId) => {
-          if (newImages[imgId]) {
+  
+        // ✅ dataset을 포함하는 images에서 datasetId 제거
+        Object.keys(newImages).forEach((imgId) => {
+          if (newImages[imgId].datasetIds) {
             newImages[imgId] = {
               ...newImages[imgId],
               datasetIds: newImages[imgId].datasetIds.filter((id) => id !== datasetId),
             };
           }
         });
-
+  
+        // ✅ dataset 자체 삭제
         const newDatasets = { ...state.datasets };
         delete newDatasets[datasetId];
-
+  
         return {
           ...state,
           datasets: newDatasets,
@@ -200,7 +205,7 @@ export const useMyStore = create((set, get) => ({
     } catch (error) {
       console.error("deleteDataset error:", error);
     }
-  },
+  },  
 
   /**
    * ===================
@@ -292,20 +297,20 @@ export const useMyStore = create((set, get) => ({
         const newDatasets = { ...state.datasets };
         const newImages = { ...state.images };
 
-        cls.datasetIds.forEach((dsId) => {
-          if (newDatasets[dsId]) {
+        Object.keys(newDatasets).forEach((dsId) => {
+          if (newDatasets[dsId].classIds) {
             newDatasets[dsId] = {
               ...newDatasets[dsId],
               classIds: newDatasets[dsId].classIds.filter((id) => id !== classId),
             };
           }
         });
-
-        cls.imageIds.forEach((imgId) => {
-          if (newImages[imgId]) {
+  
+        Object.keys(newImages).forEach((imgId) => {
+          if (newImages[imgId].classIds) {
             newImages[imgId] = {
               ...newImages[imgId],
-              classId: newImages[imgId].classId === classId ? null : newImages[imgId].classId,
+              classIds: newImages[imgId].classIds.filter((id) => id !== classId),
             };
           }
         });
@@ -426,7 +431,6 @@ export const useMyStore = create((set, get) => ({
     }
   },
   
-  
   deleteImage: async (imageId) => {
     try {
       const res = await apiDeleteImage(imageId);
@@ -434,35 +438,39 @@ export const useMyStore = create((set, get) => ({
         console.error("Delete image failed:", res.error);
         return;
       }
-
+  
       // 로컬에서 제거
       set((state) => {
         const img = state.images[imageId];
         if (!img) return state;
-
+  
         const newDatasets = { ...state.datasets };
         const newClasses = { ...state.classes };
-
-        img.datasetIds.forEach((dsId) => {
-          if (newDatasets[dsId]) {
+  
+        // ✅ datasetIds가 배열이므로 객체 순회 후 filter 적용
+        Object.keys(newDatasets).forEach((dsId) => {
+          if (newDatasets[dsId].imageIds) {
             newDatasets[dsId] = {
               ...newDatasets[dsId],
               imageIds: newDatasets[dsId].imageIds.filter((id) => id !== imageId),
             };
           }
         });
-
-        const clsId = img.classId;
-        if (clsId && newClasses[clsId]) {
-          newClasses[clsId] = {
-            ...newClasses[clsId],
-            imageIds: newClasses[clsId].imageIds.filter((id) => id !== imageId),
-          };
-        }
-
+  
+        // ✅ classIds가 배열이므로 객체 순회 후 filter 적용
+        Object.keys(newClasses).forEach((clsId) => {
+          if (newClasses[clsId].imageIds) {
+            newClasses[clsId] = {
+              ...newClasses[clsId],
+              imageIds: newClasses[clsId].imageIds.filter((id) => id !== imageId),
+            };
+          }
+        });
+  
+        // ✅ 이미지 삭제
         const newImages = { ...state.images };
         delete newImages[imageId];
-
+  
         return {
           ...state,
           images: newImages,
@@ -474,6 +482,7 @@ export const useMyStore = create((set, get) => ({
       console.error("deleteImage error:", error);
     }
   },
+  
 
   /**
    * ===================

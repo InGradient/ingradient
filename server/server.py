@@ -178,9 +178,53 @@ def delete_dataset(dataset_id: str, db: Session = Depends(get_db)):
     ds = db.query(Dataset).filter(Dataset.id == dataset_id).first()
     if not ds:
         return {"error": "Dataset not found"}
+
+    # 1) 데이터셋에 연결된 이미지 처리
+    #    이미지가 이 데이터셋에만 연결되어 있다면 파일+DB 삭제,
+    #    아니면 이 데이터셋과의 연결만 해제
+    for img in list(ds.images):  # 순회 중에 remove()할 수 있으므로 list로 복사
+        if len(img.datasets) == 1:
+            # 이 이미지가 오직 해당 데이터셋에만 연결됨 → 완전 삭제
+            # (1) 파일 삭제
+            if img.file_location and os.path.exists(img.file_location):
+                try:
+                    os.remove(img.file_location)
+                except Exception as e:
+                    print(f"Failed to delete file: {img.file_location}, Error: {e}")
+
+            if img.thumbnail_location and os.path.exists(img.thumbnail_location):
+                try:
+                    os.remove(img.thumbnail_location)
+                except Exception as e:
+                    print(f"Failed to delete thumbnail: {img.thumbnail_location}, Error: {e}")
+
+            # (2) DB에서 이미지 삭제
+            db.delete(img)
+        else:
+            # 여러 데이터셋과 연결됨 → 이 데이터셋과의 연결만 해제
+            ds.images.remove(img)
+
+    db.commit()
+    db.refresh(ds)
+
+    # 2) 데이터셋에 연결된 클래스 처리
+    for cls_obj in list(ds.classes):
+        if len(cls_obj.datasets) == 1:
+            # 이 클래스가 오직 해당 데이터셋에만 연결됨 → 완전 삭제
+            db.delete(cls_obj)
+        else:
+            # 여러 데이터셋과 연결됨 → 이 데이터셋과의 연결만 해제
+            ds.classes.remove(cls_obj)
+
+    db.commit()
+    db.refresh(ds)
+
+    # 3) 최종적으로 데이터셋 자체 삭제
     db.delete(ds)
     db.commit()
-    return {"message": f"Dataset {dataset_id} deleted"}
+
+    return {"message": f"Dataset {dataset_id} deleted (images/classes also updated)."}
+
 
 # ================================
 #  CLASS API
@@ -189,28 +233,6 @@ def delete_dataset(dataset_id: str, db: Session = Depends(get_db)):
 @api_router.get("/classes")
 def list_classes(db: Session = Depends(get_db)):
     return db.query(Class).all()
-
-# @api_router.post("/classes")
-# def create_class(cls_data: ClassCreate, db: Session = Depends(get_db)):
-#     print("create_class", cls_data)
-#     cls_ = Class(
-#         id=cls_data.id,
-#         name=cls_data.name,
-#         color=cls_data.color
-#     )
-#     db.add(cls_)
-#     db.commit()
-#     db.refresh(cls_)
-
-#     if cls_data.dataset_ids:
-#         for dataset_id in cls_data.dataset_ids:
-#             dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
-#             if dataset:
-#                 cls_.datasets.append(dataset)
-#         db.commit()
-#         db.refresh(cls_)
-
-#     return cls_
 
 @api_router.post("/classes/{class_id}")
 def upsert_class(
@@ -351,9 +373,6 @@ def upsert_image(image_id: str, updated_data: dict = Body(...), db: Session = De
     new_dataset_ids = updated_data.pop("dataset_ids", None)
     new_class_ids = updated_data.pop("class_ids", None)
 
-    print("New Dataset Ids", new_dataset_ids)
-    print("New Classes Ids", new_class_ids)
-
     updated_data.setdefault("properties", {"description": "", "comment": ""})
 
     img = db.query(Image).filter(Image.id == image_id).first()
@@ -382,7 +401,7 @@ def upsert_image(image_id: str, updated_data: dict = Body(...), db: Session = De
 
         db.commit()
         db.refresh(img)
-        
+
     if new_class_ids is not None:
         existing_class_ids = {cls.id for cls in img.classes}
 
@@ -417,9 +436,26 @@ def delete_image(image_id: str, db: Session = Depends(get_db)):
     img = db.query(Image).filter(Image.id == image_id).first()
     if not img:
         return {"error": "Image not found"}
+
+    # ✅ 파일 삭제 처리
+    if img.file_location and os.path.exists(img.file_location):
+        try:
+            os.remove(img.file_location)  # 원본 이미지 삭제
+        except Exception as e:
+            print(f"Failed to delete file: {img.file_location}, Error: {e}")
+
+    if img.thumbnail_location and os.path.exists(img.thumbnail_location):
+        try:
+            os.remove(img.thumbnail_location)  # 썸네일 이미지 삭제
+        except Exception as e:
+            print(f"Failed to delete thumbnail: {img.thumbnail_location}, Error: {e}")
+
+    # ✅ DB에서 이미지 삭제
     db.delete(img)
     db.commit()
-    return {"message": f"Image {image_id} deleted"}
+
+    return {"message": f"Image {image_id} and associated files deleted"}
+
 
 # ================================
 #  파일 업로드 (업로드 & DB 저장) 및 관계 업데이트
