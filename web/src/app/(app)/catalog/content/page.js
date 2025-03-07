@@ -382,7 +382,7 @@ const ContentSection = ({
 
   // 선택 이미지 삭제
   const handleDelete = () => {
-    selectedImageIds.forEach((id) => deleteImage(id));
+    selectedImageIds.forEach((id) => deleteImage(id, selectedDatasetIds));
     setSelectedImageIds([]);
   };
 
@@ -495,7 +495,10 @@ const ContentSection = ({
             >
               Delete
             </button>
-            <button onClick={() => setImageUploadModalVisible(true)}>
+            <button
+              onClick={() => setImageUploadModalVisible(true)}
+              disabled={selectedDatasetIds.length === 0}
+            >
               Upload
             </button>
             <InteractiveIcon onClick={handleDownloadFiles}>

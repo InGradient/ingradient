@@ -18,6 +18,7 @@ from server.db.models import Dataset, Class, Image
 from server.db.crud import DatasetCreate, ClassCreate, ImageCreate
 from server.utils import to_camel_case, to_snake_case
 
+
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
@@ -430,32 +431,55 @@ def upsert_image(image_id: str, updated_data: dict = Body(...), db: Session = De
 
     return response_data
 
-
 @api_router.delete("/images/{image_id}")
-def delete_image(image_id: str, db: Session = Depends(get_db)):
+def delete_image(
+    image_id: str,
+    selected_dataset_ids: Optional[List[str]] = Query(None),  # 리스트로 받기
+    db: Session = Depends(get_db)
+):
     img = db.query(Image).filter(Image.id == image_id).first()
     if not img:
         return {"error": "Image not found"}
+    
+    print("selected_dataset_ids", selected_dataset_ids)
 
-    # ✅ 파일 삭제 처리
+    # dataset_id가 제공된 경우
+    if selected_dataset_ids:
+        # image와 연결된 각 dataset에 대해
+        for ds in list(img.datasets):
+            if ds.id in selected_dataset_ids:
+                ds.images.remove(img)  # 해당 dataset과의 연결만 제거
+        db.commit()
+        db.refresh(img)
+
+        # 제거 후 이미지가 연결된 데이터셋이 없으면 파일 삭제 및 이미지 완전 삭제
+        if len(img.datasets) == 0:
+            _delete_image_files(img)
+            db.delete(img)
+            db.commit()
+            return {"message": f"Image {image_id} fully deleted (no remaining dataset connections)."}
+        else:
+            return {"message": f"Image {image_id} unlinked from datasets {selected_dataset_ids}."}
+    else:
+        # dataset_id가 제공되지 않으면, 기본적으로 파일과 DB 모두에서 완전 삭제
+        _delete_image_files(img)
+        db.delete(img)
+        db.commit()
+        return {"message": f"Image {image_id} and associated files deleted."}
+
+def _delete_image_files(img: Image):
+    """이미지 파일과 썸네일을 삭제하는 유틸 함수"""
     if img.file_location and os.path.exists(img.file_location):
         try:
-            os.remove(img.file_location)  # 원본 이미지 삭제
+            os.remove(img.file_location)
         except Exception as e:
             print(f"Failed to delete file: {img.file_location}, Error: {e}")
 
     if img.thumbnail_location and os.path.exists(img.thumbnail_location):
         try:
-            os.remove(img.thumbnail_location)  # 썸네일 이미지 삭제
+            os.remove(img.thumbnail_location)
         except Exception as e:
             print(f"Failed to delete thumbnail: {img.thumbnail_location}, Error: {e}")
-
-    # ✅ DB에서 이미지 삭제
-    db.delete(img)
-    db.commit()
-
-    return {"message": f"Image {image_id} and associated files deleted"}
-
 
 # ================================
 #  파일 업로드 (업로드 & DB 저장) 및 관계 업데이트

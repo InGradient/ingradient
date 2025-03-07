@@ -431,9 +431,10 @@ export const useMyStore = create((set, get) => ({
     }
   },
   
-  deleteImage: async (imageId) => {
+  deleteImage: async (imageId, selectedDatasetIds) => {
     try {
-      const res = await apiDeleteImage(imageId);
+      console.log("selectedDatasetIds", selectedDatasetIds)
+      const res = await apiDeleteImage(imageId, selectedDatasetIds);
       if (res.error) {
         console.error("Delete image failed:", res.error);
         return;

@@ -147,12 +147,13 @@ export async function updateImage(imageId, updatedData) {
   return res.data;
 }
 
-// [DELETE] Image 삭제
-export async function deleteImage(imageId) {
-  const res = await axios.delete(`/api/images/${imageId}`);
+export async function deleteImage(imageId, selectedDatasetIds = []) {
+  const res = await axios.delete(`/api/images/${imageId}`, {
+    params: { selected_dataset_ids: selectedDatasetIds },
+    paramsSerializer: params => qs.stringify(params, { arrayFormat: 'repeat' })
+  });
   return res.data;
 }
-
 export async function uploadFile(file) {
   const formData = new FormData();
   formData.append('file', file);
