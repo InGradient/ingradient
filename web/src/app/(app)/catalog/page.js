@@ -50,6 +50,7 @@ export default function CatalogPage() {
   }, []);
 
   useEffect(() => {
+    console.log("New Images Loaded", selectedDatasetIds)
     loadImages(selectedDatasetIds);
   }, [selectedDatasetIds]);
 

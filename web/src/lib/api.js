@@ -1,4 +1,5 @@
-import axios from 'axios';
+import axios from "axios";
+import qs from "qs"; 
 
 /**
  * =========================
@@ -92,11 +93,10 @@ export async function deleteClass(classId) {
 
 // [GET] 모든 Image 목록
 export async function listImages(datasetIds = []) {
-  const params = {};
-  if (datasetIds.length > 0) {
-    params.dataset_ids = datasetIds;
-  }
-  const res = await axios.get('/api/images', { params });
+  const res = await axios.get("/api/images", {
+    params: { dataset_ids: datasetIds },
+    paramsSerializer: (params) => qs.stringify(params, { arrayFormat: "repeat" }), // ✅ 배열 직렬화
+  });
   return res.data;
 }
 

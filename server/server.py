@@ -313,6 +313,7 @@ def list_images(dataset_ids: Optional[List[str]] = Query(None), db: Session = De
     - dataset_ids가 없으면 전체 이미지를 반환
     - 각 이미지에는 연결된 클래스 목록(classIds)도 포함
     """
+    print("dataset_ids", dataset_ids)
     if dataset_ids:
         # dataset_ids에 연결된 이미지들을 distinct()로 중복 제거
         images = db.query(Image).join(Image.datasets).filter(Dataset.id.in_(dataset_ids)).distinct().all()

@@ -258,7 +258,6 @@ export const useMyStore = create((set, get) => ({
    * ===================
    */
   saveClass: async (data) => {
-    console.log('data', data)
     const { id } = data;
     const state = get();
     let serverResponse;
@@ -290,7 +289,6 @@ export const useMyStore = create((set, get) => ({
       }
     }
   
-    console.log("serverResponse", serverResponse)
     set((state) => {
       // 1. 클래스 state 업데이트
       const newClasses = { ...state.classes, [id]: serverResponse };
@@ -299,13 +297,9 @@ export const useMyStore = create((set, get) => ({
       //    serverResponse.imageIds (즉, 연결된 이미지 ID들)를 추가 (중복 제거)
       const newDatasetIds = serverResponse.datasetIds || [];
       const newDatasets = { ...state.datasets };
-      console.log("NewDatasets in new class", newDatasets)
       newDatasetIds.forEach((dsId) => {
         if (newDatasets[dsId]) {
           const currentClassIds = newDatasets[dsId].classIds || [];
-          console.log("currentClassIds", currentClassIds)
-          console.log("serverResponse.classIds", serverResponse.classIds)
-          console.log("id", id)
 
           newDatasets[dsId].classIds = [
             ...new Set([...currentClassIds, id]), // serverResponse.classIds 대신 id 사용
@@ -322,9 +316,6 @@ export const useMyStore = create((set, get) => ({
         }
       });
 
-      console.log("New Dataset", newDatasets)
-      console.log("New Images", newImages)
-    
       return {
         ...state,
         classes: newClasses,

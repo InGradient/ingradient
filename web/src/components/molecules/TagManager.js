@@ -254,7 +254,6 @@ const TagManager = ({
     }
   };
 
-  console.log("ActiveClasses", activeClasses)
   return (
     <Container>
       <InputContainer>
