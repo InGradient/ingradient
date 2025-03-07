@@ -33,6 +33,11 @@ export async function updateDataset(datasetId, updatedData) {
   return res.data;
 }
 
+export async function upsertDataset(datasetId, updatedData) {
+  const res = await axios.put(`/api/datasets/${datasetId}`, updatedData);
+  return res.data;
+}
+
 // [DELETE] Dataset 삭제
 export async function deleteDataset(datasetId) {
   const res = await axios.delete(`/api/datasets/${datasetId}`);

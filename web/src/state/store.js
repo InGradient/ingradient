@@ -7,6 +7,7 @@ import {
   getDataset as apiGetDataset,
   createDataset as apiCreateDataset,
   updateDataset as apiUpdateDataset,
+  upsertDataset as apiUpsertDataset,
   deleteDataset as apiDeleteDataset,
 
   // Class API
@@ -94,13 +95,13 @@ export const useMyStore = create((set, get) => ({
       img.datasetIds.some((datasetId) => selectedDatasetIds.includes(datasetId))
     );
   },
+  
   /**
    * ===================
    *  DATASET
    * ===================
    */
   saveDataset: async (data) => {
-    // data = { id, name, description?, classIds = [], imageIds = [] }
     const { id } = data;
     const state = get();
     const existing = state.datasets[id];
@@ -108,33 +109,28 @@ export const useMyStore = create((set, get) => ({
     try {
       let serverResponse;
       if (existing) {
-        // 이미 존재 → 서버에 Update
-        // updatedData는 { name, description, ... } 형식
         const updatedData = {
           name: data.name,
           description: data.description,
         };
-        serverResponse = await apiUpdateDataset(id, updatedData);
+        serverResponse = await apiUpsertDataset(id, updatedData);
         if (serverResponse.error) {
           console.error("Update dataset failed:", serverResponse.error);
           return;
         }
       } else {
-        // 존재하지 않음 → 서버에 Create
-        // createDataset API에 필요한 필드는 { id, name, description? }
         const newDataset = {
           id,
           name: data.name,
           description: data.description || "",
         };
-        serverResponse = await apiCreateDataset(newDataset);
+        serverResponse = await apiUpsertDataset(newDataset);
         if (serverResponse.error) {
           console.error("Create dataset failed:", serverResponse.error);
           return;
         }
       }
 
-      // 2) 로컬 상태 갱신 (기존 로직)
       set((state) => {
         const { classIds = [], imageIds = [] } = data;
 
@@ -148,55 +144,9 @@ export const useMyStore = create((set, get) => ({
           },
         };
 
-        // 클래스와 이미지를 업데이트
-        const newClasses = { ...state.classes };
-        const newImages = { ...state.images };
-
-        // 기존 관계 해제
-        if (state.datasets[id]) {
-          const oldClassIds = state.datasets[id].classIds || [];
-          const oldImageIds = state.datasets[id].imageIds || [];
-          oldClassIds.forEach((clsId) => {
-            if (newClasses[clsId]) {
-              newClasses[clsId] = {
-                ...newClasses[clsId],
-                datasetIds: newClasses[clsId].datasetIds.filter((dsId) => dsId !== id),
-              };
-            }
-          });
-          oldImageIds.forEach((imgId) => {
-            if (newImages[imgId]) {
-              newImages[imgId] = {
-                ...newImages[imgId],
-                datasetIds: newImages[imgId].datasetIds.filter((dsId) => dsId !== id),
-              };
-            }
-          });
-        }
-
-        // 새로운 관계 추가
-        classIds.forEach((clsId) => {
-          if (newClasses[clsId]) {
-            newClasses[clsId] = {
-              ...newClasses[clsId],
-              datasetIds: [...new Set([...newClasses[clsId].datasetIds, id])],
-            };
-          }
-        });
-        imageIds.forEach((imgId) => {
-          if (newImages[imgId]) {
-            newImages[imgId] = {
-              ...newImages[imgId],
-              datasetIds: [...new Set([...newImages[imgId].datasetIds, id])],
-            };
-          }
-        });
-
         return {
           ...state,
           datasets: newDatasets,
-          classes: newClasses,
-          images: newImages,
         };
       });
     } catch (error) {

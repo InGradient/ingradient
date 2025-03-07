@@ -212,6 +212,7 @@ const TagManager = ({
         datasetIds: Array.from(new Set([...selectedDatasetIds])),
       };
   
+      console.log("Add new class", updatedClassObj)
       saveClass(updatedClassObj);
   
       const updatedTags = tags.map((tag) =>
@@ -230,6 +231,7 @@ const TagManager = ({
         datasetIds: Array.from(new Set([...selectedDatasetIds])),
       };
   
+      console.log("Created New Class:", newClass)
       saveClass(newClass);
       setTags([...tags, newClass.id]);
     }

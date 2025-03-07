@@ -26,7 +26,8 @@ class Dataset(Base):
     images = relationship(
         "Image",
         secondary=dataset_images,
-        back_populates="datasets"
+        back_populates="datasets",
+        cascade="save-update, merge"
     )
 
     # 🔥 Dataset 내부에서 연결된 class_ids & image_ids 확인 가능하게 추가
@@ -100,7 +101,8 @@ class Image(Base):
     classes = relationship(
         "Class",
         secondary=class_images,
-        back_populates="images"
+        back_populates="images",
+        cascade="save-update, merge"
     )
 
     @property

@@ -222,7 +222,6 @@ def upsert_class(
     # 요청 데이터의 키(camelCase)를 snake_case로 변환
     updated_data = {to_snake_case(k): v for k, v in updated_data.items()}
     
-    # 관계 업데이트용 데이터 추출 (없으면 None)
     new_dataset_ids = updated_data.pop("dataset_ids", None)
     new_image_ids = updated_data.pop("image_ids", None)
     
@@ -344,7 +343,6 @@ def get_image(image_id: str, db: Session = Depends(get_db)):
         return {"error": "Image not found"}
     return img
 
-
 @api_router.post("/images/{image_id}")
 def upsert_image(image_id: str, updated_data: dict = Body(...), db: Session = Depends(get_db)):
     # ✅ 요청 데이터(`camelCase` → `snake_case` 변환)
@@ -352,6 +350,9 @@ def upsert_image(image_id: str, updated_data: dict = Body(...), db: Session = De
 
     new_dataset_ids = updated_data.pop("dataset_ids", None)
     new_class_ids = updated_data.pop("class_ids", None)
+
+    print("New Dataset Ids", new_dataset_ids)
+    print("New Classes Ids", new_class_ids)
 
     updated_data.setdefault("properties", {"description": "", "comment": ""})
 
@@ -369,22 +370,33 @@ def upsert_image(image_id: str, updated_data: dict = Body(...), db: Session = De
         db.refresh(img)
 
     if new_dataset_ids is not None:
-        img.datasets = []
-        for dataset_id in new_dataset_ids:
-            dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
-            if dataset:
-                img.datasets.append(dataset)
+        # 현재 연결된 dataset들의 ID를 가져오기
+        existing_dataset_ids = {ds.id for ds in img.datasets}
+
+        # 추가할 dataset 찾기 (이미 연결되지 않은 dataset만 추가)
+        datasets_to_add = [db.query(Dataset).filter(Dataset.id == dataset_id).first()
+                        for dataset_id in new_dataset_ids if dataset_id not in existing_dataset_ids]
+
+        # dataset 추가
+        img.datasets.extend(filter(None, datasets_to_add))  # None이 아닌 값만 추가
+
+        db.commit()
+        db.refresh(img)
+        
+    if new_class_ids is not None:
+        existing_class_ids = {cls.id for cls in img.classes}
+
+        # 추가할 class 찾기
+        classes_to_add = [db.query(Class).filter(Class.id == class_id).first()
+                        for class_id in new_class_ids if class_id not in existing_class_ids]
+
+        # 기존 관계 제거 후 새 class만 추가
+        img.classes.clear()
+        img.classes.extend(filter(None, classes_to_add))
+
         db.commit()
         db.refresh(img)
 
-    if new_class_ids is not None:
-        img.classes = []
-        for class_id in new_class_ids:
-            cls_obj = db.query(Class).filter(Class.id == class_id).first()
-            if cls_obj:
-                img.classes.append(cls_obj)
-        db.commit()
-        db.refresh(img)
 
     # ✅ 응답(`snake_case` → `camelCase` 변환)
     img_dict = img.__dict__.copy()
