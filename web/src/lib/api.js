@@ -154,6 +154,7 @@ export async function deleteImage(imageId, selectedDatasetIds = []) {
   });
   return res.data;
 }
+
 export async function uploadFile(file) {
   const formData = new FormData();
   formData.append('file', file);

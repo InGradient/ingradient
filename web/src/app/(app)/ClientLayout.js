@@ -1,6 +1,6 @@
 "use client";
 
-import { DataProvider } from "@/contexts/DataProvider";
+// import { DataProvider } from "@/contexts/DataProvider";
 import { Sidebar } from "components/organisms/Sidebar";
 import styled from "styled-components";
 import { useState, useEffect } from "react";
@@ -32,27 +32,20 @@ const LoadingContainer = styled.div`
 `;
 
 export default function ClientLayout({ children }) {
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoaded(true);
-    }, 1);
-    return () => clearTimeout(timer);
+    setIsMounted(true);
   }, []);
 
-  if (!isLoaded) {
-    return <LoadingContainer>Loading...</LoadingContainer>;
-  }
+  if (!isMounted) return null;
 
   return (
-    <DataProvider>
-      <StyledMain>
-        <SidebarContainer>
-          <Sidebar />
-        </SidebarContainer>
-        <LayoutContainer>{children}</LayoutContainer>
-      </StyledMain>
-    </DataProvider>
+    <StyledMain>
+      <SidebarContainer>
+        <Sidebar />
+      </SidebarContainer>
+      <LayoutContainer>{children}</LayoutContainer>
+    </StyledMain>
   );
 }

@@ -42,15 +42,11 @@ export default function CatalogPage() {
   const [selectedImageIds, setSelectedImageIds] = useState([]);
   const [isImageEditorOpen, setIsImageEditorOpen] = useState(false);
 
-  // console.log("Images", images)
-  // console.log("Dataset", datasets)
-
   useEffect(() => {
     loadDataset();
   }, []);
 
   useEffect(() => {
-    console.log("New Images Loaded", selectedDatasetIds)
     loadImages(selectedDatasetIds);
   }, [selectedDatasetIds]);
 

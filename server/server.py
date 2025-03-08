@@ -17,7 +17,7 @@ from server.db.models import Dataset, Class, Image
 # schemas from crud.py (예: Pydantic 모델)
 from server.db.crud import DatasetCreate, ClassCreate, ImageCreate
 from server.utils import to_camel_case, to_snake_case
-
+from .cleanup import start_cleanup_worker
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -35,8 +35,10 @@ app.add_middleware(
 init_db()
 
 # ---- 업로드 디렉토리 설정 ----
+TMP_FOLDER = ".tmp"
 UPLOAD_DIR = os.path.abspath("uploads/images")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+start_cleanup_worker(TMP_FOLDER)
 
 def get_db():
     db = SessionLocal()
@@ -525,6 +527,83 @@ async def upload_file(
     response = {to_camel_case(key): value for key, value in ret.items()}
     return response
 
+@api_router.post("/upload-temp")
+async def upload_temp_file(file: UploadFile = File(...), session_id: str = Form(...)):
+    # 1) 임시 업로드 세션별 폴더
+    tmp_session_folder = os.path.join(TMP_FOLDER, session_id)
+    os.makedirs(tmp_session_folder, exist_ok=True)
+
+    # 2) 파일 ID 생성 등
+    file_id = str(uuid.uuid4()).replace("-", "")
+    tmp_file_path = os.path.join(tmp_session_folder, f"{file_id}_{file.filename}")
+
+    # 3) 저장
+    with open(tmp_file_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    return {
+        "fileId": file_id,
+        "filename": file.filename,
+        "tempLocation": tmp_file_path,
+    }
+
+@api_router.post("/commit-uploads")
+async def commit_uploads(
+    session_id: str = Form(...),
+    file_ids: List[str] = Body(...)
+): 
+    upload_folder = "uploads"
+    final_folder = os.path.join(upload_folder, "images")
+    thumbnail_folder = os.path.join(upload_folder, "thumbnails")
+
+    os.makedirs(final_folder, exist_ok=True)
+    os.makedirs(thumbnail_folder, exist_ok=True)
+
+    moved_files_info = []
+
+    # session 폴더 내에서 파일을 찾습니다.
+    tmp_session_folder = os.path.join(TMP_FOLDER, session_id)
+
+    for file_id in file_ids:
+        tmp_file_prefix = f"{file_id}_"
+        matched_files = [f for f in os.listdir(tmp_session_folder) if f.startswith(tmp_file_prefix)]
+        if not matched_files:
+            continue
+
+        tmp_filename = matched_files[0]
+        tmp_file_path = os.path.join(tmp_session_folder, tmp_filename)
+        final_file_path = os.path.join(final_folder, tmp_filename)
+        
+        shutil.move(tmp_file_path, final_file_path)
+        
+        thumbnail_path = os.path.join(thumbnail_folder, tmp_filename)
+        try:
+            with PILImage.open(final_file_path) as img:
+                img.thumbnail((256, 256))
+                img.save(thumbnail_path, format=img.format)
+        except Exception as e:
+            print("Thumbnail creation failed:", e)
+            thumbnail_path = None
+
+        original_filename = tmp_filename.split("_", 1)[1] if "_" in tmp_filename else tmp_filename
+
+        ret = {
+            "id": file_id,
+            "filename": original_filename,
+            "file_location": final_file_path,
+            "thumbnail_location": thumbnail_path,
+        }
+        response = {to_camel_case(key): value for key, value in ret.items()}
+        moved_files_info.append(response)
+
+    return {"status": "ok", "movedFiles": moved_files_info}
+
+@api_router.delete("/cancel-uploads")
+async def cancel_uploads(session_id: str = Form(...)):
+    tmp_session_folder = os.path.join(TMP_FOLDER, session_id)
+    if os.path.exists(tmp_session_folder):
+        shutil.rmtree(tmp_session_folder)  # 통째로 삭제
+    return {"status": "ok"}
 
 @api_router.get("/download/{filename}")
 def download_file(filename: str):

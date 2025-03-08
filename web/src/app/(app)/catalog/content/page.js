@@ -26,7 +26,7 @@ import { filterConfigs } from "./TableMenu/FilterConfigs";
 import { ArrowDownUp, Filter, LayerGroup, Grid, ChartScatter } from "@/components/atoms/Icon";
 import Checkbox from "@/components/atoms/Checkbox";
 import { Toggle, ToggleIcon } from "@/components/molecules/Toggle";
-import UploadModal from "@/components/molecules/UploadModal";
+import UploadModal from "@/app/(app)/catalog/content/UploadModal";
 import { EmptyMessage } from "@/components/organisms/EmptyMessage";
 
 import { extractUniqueAndRange, filterData, sortData, groupData } from "@/utils/dataProcessing";
@@ -325,52 +325,9 @@ const ContentSection = ({
 
   const filterSummaries = getFilterSummaries();
 
-  // 2) In your component
-  const onImageUpload = async (files) => {
-    try {
-      // This returns the array of newly created objects
-      const newFiles = await handleImageUpload(files);
-
-      // Phase 1: merge into your state
-      setImageFiles((prev) => [...prev, ...newFiles]);
-
-      // Phase 2: set each file's status to "success" or "failure"
-      for (const fileObj of newFiles) {
-        setImageFiles((prev) =>
-          prev.map((f) =>
-            f.id === fileObj.id
-              ? { ...f, status: fileObj.status, error: fileObj.error }
-              : f
-          )
-        );
-      }
-    } catch (err) {
-      console.error("Image upload error:", err);
-    }
-  };
-
   const handleDownloadFiles = async () => {
     await handleDownload(sortedData, activeClasses);
   };
-
-  const handleConfirmUpload = async (uploadedFiles, clearFiles) => {
-    const successfulFiles = uploadedFiles
-      .filter((file) => file.status === "success")
-      .map((file) => ({
-        ...file,
-        datasetIds: selectedDatasetIds,
-        userId: "user1",
-      }));
-  
-  
-    // ✅ 하나씩 `saveImage` 호출
-    for (const file of successfulFiles) {
-      await saveImage(file);
-    }
-  
-    clearFiles();
-    setImageUploadModalVisible(false);
-  };  
 
   const handleSelectAllImages = () => {
     setSelectedImageIds(
@@ -508,15 +465,12 @@ const ContentSection = ({
             {/* Upload Modal */}
             {isImageUploadModalVisible && (
               <UploadModal
-                title="Upload Images"
-                acceptedFileType="image/*"
-                files={imageFiles}
-                onFilesDrop={onImageUpload} 
+                saveImage={saveImage}
+                selectedDatasetIds={selectedDatasetIds}
                 onClose={() => {
                   setImageUploadModalVisible(false);
                   setImageFiles([]);
                 }}
-                onConfirm={() => handleConfirmUpload(imageFiles, () => setImageFiles([]))}
               />
             )}
           </FileButtons>

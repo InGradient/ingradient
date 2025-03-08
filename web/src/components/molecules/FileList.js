@@ -58,8 +58,8 @@ const FileList = ({ files }) => (
             style={{ color: "#555", fontSize: "24px" }}
           />
           <FileNameContainer>
-            {f.file.name}
-            <FileSizeRow>{formatFileSize(f.file.size)}</FileSizeRow>
+            {f.originalFile.name}
+            <FileSizeRow>{formatFileSize(f.originalFile.size)}</FileSizeRow>
           </FileNameContainer>
         </FileDetailsContainer>
         <StatusIconContainer>

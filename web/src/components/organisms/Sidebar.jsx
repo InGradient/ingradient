@@ -48,16 +48,16 @@ const StyledIcon = styled(FontAwesomeIcon)`
 `;
 
 export const Sidebar = ({ className }) => {
-  const router = useRouter();
+  // const router = useRouter();
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.push("/login");
-    } catch (error) {
-      console.error("로그아웃 실패:", error);
-    }
-  };
+  // const handleLogout = async () => {
+  //   try {
+  //     await signOut(auth);
+  //     router.push("/login");
+  //   } catch (error) {
+  //     console.error("로그아웃 실패:", error);
+  //   }
+  // };
 
   return (
     <StyledSidebar className={`sidebar ${className}`}>
@@ -66,12 +66,12 @@ export const Sidebar = ({ className }) => {
           <Logo mode="radius" />
         </div>
         <div className="menu-wrapper">
-          <TabMenu icon={<StyledIcon icon={faTableCellsLarge} />} status="default" to="/" />
-          <TabMenu icon={<StyledIcon icon={faTv} />} status="default" to="/compare" />
-          <TabMenu icon={<StyledIcon icon={faTag} />} showTitle status="default" to="/classbook" />
+          <TabMenu icon={<StyledIcon icon={faTableCellsLarge} />} status="default" to="/catalog" />
+          {/* <TabMenu icon={<StyledIcon icon={faTv} />} status="default" to="/compare" />
+          <TabMenu icon={<StyledIcon icon={faTag} />} showTitle status="default" to="/classbook" /> */}
         </div>
       </div>
-      <div className="user-menu">
+      {/* <div className="user-menu">
         <TabMenu icon={<StyledIcon icon={faUser} />} status="default" to="/profile" />
 
         <TabMenu
@@ -79,7 +79,7 @@ export const Sidebar = ({ className }) => {
           status="default"
           onClick={handleLogout}
         />
-      </div>
+      </div> */}
     </StyledSidebar>
   );
 };
