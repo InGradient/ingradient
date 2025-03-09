@@ -25,13 +25,14 @@ import {
   upsertImage as apiUpsertImage,
   updateImage as apiUpdateImage,
   deleteImage as apiDeleteImage,
-} from '@/lib/api';
 
-import {
-  initialDatasets,
-  initialClasses,
-  initialImages,
-} from './initialData';
+  // Label API
+  listBoundingBoxes,
+  listKeyPoints,
+  listSegmentations,
+  listLabels as apiListLabels,
+  saveLabels as apiSaveLabels,
+} from '@/lib/api';
 
 
 export const useMyStore = create((set, get) => ({
@@ -41,6 +42,8 @@ export const useMyStore = create((set, get) => ({
   datasets: {},
   classes: {},
   images: {},
+
+  labels: {},
 
   /**
    * ===================
@@ -52,11 +55,11 @@ export const useMyStore = create((set, get) => ({
       const datasets = await apiListDatasets();
       const datasetMap = Object.fromEntries(datasets.map((ds) => [ds.id, ds]));
   
-      set({
+      set((state) => ({
         datasets: datasetMap,
-        classes: {},
-        images: {},
-      });
+        classes: state.classes,
+        images: state.images,
+      }));
     } catch (error) {
       console.error("Error loading initial datasets:", error);
     }
@@ -64,7 +67,7 @@ export const useMyStore = create((set, get) => ({
 
   loadClasses: async () => {
     try {
-      const classes = await apiListClasses(); // 모든 클래스 가져오기
+      const classes = await apiListClasses();
       const classMap = Object.fromEntries(classes.map((cls) => [cls.id, cls]));
   
       set((state) => ({
@@ -80,15 +83,49 @@ export const useMyStore = create((set, get) => ({
     try {
       const images = await apiListImages(selectedDatasetIds);
       const imageMap = Object.fromEntries(images.map((img) => [img.id, img]));
+
       set((state) => ({
         ...state,
         images: imageMap,
       }));
+
+      await get().loadLabels();
     } catch (error) {
       console.error("Error loading images:", error);
     }
-  },  
+  },
   
+  loadLabels: async (selectedImageIds = []) => {
+    if (selectedImageIds.length === 0) return;
+  
+    const { labels } = get();
+    const updatedLabels = { ...labels };
+  
+    // 선택된 이미지 ID에 대해서만 한 번에 라벨 가져오기
+    await Promise.all(
+      selectedImageIds.map(async (imageId) => {
+        try {
+          const response = await apiListLabels(imageId);
+  
+          updatedLabels[imageId] = {
+            boundingBoxes: response.boundingBoxes || [],
+            keyPoints: response.keyPoints || [],
+            segmentations: response.segmentations || [],
+          };
+        } catch (error) {
+          console.error(`❌ Error loading labels for image ${imageId}:`, error);
+        }
+      })
+    );
+  
+    set((state) => ({
+      ...state,
+      labels: updatedLabels,
+    }));
+  
+    console.log("✅ Labels loaded successfully for selected images:", selectedImageIds);
+  },  
+
   getActiveImages: (selectedDatasetIds) => {
     const { images } = get();
     return Object.values(images).filter((img) =>
@@ -646,4 +683,25 @@ export const useMyStore = create((set, get) => ({
       };
     });
   },
+
+  saveLabels: async ({ imageId, boundingBoxes = [], keyPoints = [], segmentations = [] }) => {
+    try {
+      console.log(`🔄 Saving labels for image: ${imageId}`);
+      console.log(`🔄 Saving labels for BoundingBoxes:`, boundingBoxes);
+      console.log(`🔄 Saving labels for keyPoints: `, keyPoints);
+      console.log(`🔄 Saving labels for segmentations:`, segmentations);
+      
+      // API 요청을 병렬로 실행
+      const response = await apiSaveLabels({
+        imageId,
+        boundingBoxes,
+        keyPoints,
+        segmentations,
+      });
+
+    } catch (error) {
+      console.error(`❌ Error saving labels for image ${imageId}:`, error);
+    }
+  },
+  
 }));

@@ -24,9 +24,11 @@ export default function CatalogPage() {
   const loadDataset = useMyStore((state) => state.loadDataset);
   const loadClasses = useMyStore((state) => state.loadClasses)
   const loadImages = useMyStore((state) => state.loadImages)
+  const loadLabels = useMyStore((state) => state.loadLabels)
   const datasets = useMyStore((state) => state.datasets);
   const classes = useMyStore((state) => state.classes);
   const images = useMyStore((state) => state.images);
+  const labels = useMyStore((state) => state.labels); 
 
   const { loading, progress, loadingStatus } = useLoadingStore();
 
@@ -35,7 +37,8 @@ export default function CatalogPage() {
   const deleteDataset = useMyStore((state) => state.deleteDataset);
   const saveClass = useMyStore((state) => state.saveClass);
   const deleteClass = useMyStore((state) => state.deleteClass);
-  const createImage = useMyStore((state) => state.createImage);
+  const saveLabels = useMyStore((state) => state.saveLabels);
+  
   const saveImage = useMyStore((state) => state.saveImage);
   const deleteImage = useMyStore((state) => state.deleteImage);
   const [selectedDatasetIds, setSelectedDatasetIds] = useState([]);
@@ -54,6 +57,10 @@ export default function CatalogPage() {
     loadClasses();
   }, []);
   
+  useEffect(() => {
+    loadLabels(selectedImageIds);
+  }, [selectedImageIds])
+  
   const activeImages = useMemo(() => {
     const activeImagesDict = {};
     selectedDatasetIds.forEach((datasetId) => {
@@ -62,7 +69,7 @@ export default function CatalogPage() {
       });
     });
     return activeImagesDict;
-  }, [images, selectedDatasetIds]);
+  }, [images, selectedDatasetIds, classes]);
 
   const activeClasses = useMemo(() => {
     const allClasses = selectedDatasetIds.flatMap(
@@ -73,8 +80,6 @@ export default function CatalogPage() {
   
     return uniqueClasses;
   }, [datasets, selectedDatasetIds]);
-  
-  
 
   // 사이드바 & Property 섹션 상태
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
@@ -248,6 +253,8 @@ export default function CatalogPage() {
           image={lastClickedImage}
           saveImage={saveImage}
           classes={classes}
+          labels={labels}
+          saveLabels={saveLabels}
           onClose={() => {
             setZoomedImageObj(null);
             setIsImageEditorOpen(false);

@@ -275,7 +275,7 @@ export default function PropertySection({
           setLoadingStatus(`[${currentIndex}/${totalImages}] Processing: ${image.filename}`);
   
           // 모델 실행
-          const extractedFeatures = await runDinov2Model(image.imageURL);
+          const extractedFeatures = await runDinov2Model(image.fileLocation);
           
           // 결과 업데이트
           updatedImages.push({

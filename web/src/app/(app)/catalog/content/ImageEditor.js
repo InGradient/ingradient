@@ -39,16 +39,16 @@ const ImageWrapper = styled.div`
 
 const ZoomedImage = styled.img`
   /* 화면(오버레이) 내부에 맞추기 */
-  max-width: calc(100vw - 300px); /* 오른쪽 패널 300px 제외한 최대 너비 */
-  max-height: 100vh;             /* 화면 최대 높이 */
-  object-fit: contain;           /* 종횡비 유지하며 축소/확대 */
+  max-width: calc(100vw - 300px);
+  max-height: 100vh;
+  object-fit: contain;
   user-select: none;
   -webkit-user-drag: none;
 `;
 
 const CanvasOverlay = styled.canvas`
   position: absolute;
-  pointer-events: none; /* 마우스 이벤트는 이미지/부모가 받도록 */
+  pointer-events: none;
 `;
 
 const ResetButton = styled.button`
@@ -67,14 +67,16 @@ function ImageEditor({
   image, 
   saveImage,
   classes, 
+  labels,
+  saveLabels,
   onClose 
 }) {
-  console.log("ImageEditor", image);
-  const [boundingBoxes, setBoundingBoxes] = useState(image.boundingBoxes || []);
-  const [points, setPoints] = useState(image.points || []);
-  const [masks, setMasks] = useState(image.masks || []);
 
-  console.log("points", points);
+  console.log("Labels:", labels)
+  const [boundingBoxes, setBoundingBoxes] = useState(image.boundingBoxes || []);
+  const [keyPoints, setKeyPoints] = useState(image.points || []);
+  const [segmentations, setSegmentations] = useState(image.segmentations || []);
+
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPoint, setStartPoint] = useState(null);
   const [mode, setMode] = useState("bbox");
@@ -89,26 +91,37 @@ function ImageEditor({
   // imageRef와 boundingBoxesRef 등은 최신 state 저장용
   const imageRef = useRef(image); 
   const boundingBoxesRef = useRef([]);
-  const pointsRef = useRef([]);
-  const masksRef = useRef([]);
+  const keyPointsRef = useRef([]);
+  const segmentationsRef = useRef([]);
 
-  /* 
-    image가 변경될 때마다 라벨 상태를 업데이트. 
-    (image.classId 등의 변화도 반영) 
-  */
+  const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL;
+  
+  const imageURL = image.fileLocation ? `${SERVER_BASE_URL}/${image.fileLocation}` : null;
+
   useEffect(() => {
-    setBoundingBoxes(image.boundingBoxes ?? []);
-    setPoints(image.points ?? []);
-    setMasks(image.masks ?? []);
-  }, [image.id]);
+    setBoundingBoxes(labels[image.id]?.boundingBoxes || []);
+    setKeyPoints(labels[image.id]?.keyPoints || []);
+    setSegmentations(labels[image.id]?.segmentations || []);
+  }, [image.id, labels]);  
 
   useEffect(() => {
     imageRef.current = image;
   }, [image]);
 
   useEffect(() => { boundingBoxesRef.current = boundingBoxes; }, [boundingBoxes]);
-  useEffect(() => { pointsRef.current = points; }, [points]);
-  useEffect(() => { masksRef.current = masks; }, [masks]);
+  useEffect(() => { keyPointsRef.current = keyPoints; }, [keyPoints]);
+  useEffect(() => { segmentationsRef.current = segmentations; }, [segmentations]);
+
+  useEffect(() => {
+    return () => {
+      saveLabels({
+        imageId: image.id,
+        boundingBoxes: boundingBoxesRef.current,
+        keyPoints: keyPointsRef.current,
+        segmentations: segmentationsRef.current,
+      });
+    };
+  }, [image.id]);
 
   // 화면 리사이즈 or 데이터 변동 시 Canvas 크기 재조정 + 다시 그리기
   useEffect(() => {
@@ -132,9 +145,8 @@ function ImageEditor({
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [image, boundingBoxes, points, masks]);
+  }, [image, boundingBoxes, keyPoints, segmentations]);
 
-  /** 어노테이션(Boxes, Points, Masks) 모두 그리기 */
   const drawAllAnnotations = (ctx) => {
     const { width, height } = ctx.canvas;
 
@@ -144,15 +156,15 @@ function ImageEditor({
       ctx.strokeStyle = classItem?.color || "grey";
       ctx.lineWidth = 2;
 
-      const absMinX = box.minX * width;
-      const absMinY = box.minY * height;
-      const absMaxX = box.maxX * width;
-      const absMaxY = box.maxY * height;
+      const absMinX = box.xMin * width;
+      const absMinY = box.yMin * height;
+      const absMaxX = box.xMax * width;
+      const absMaxY = box.yMax * height;
       ctx.strokeRect(absMinX, absMinY, absMaxX - absMinX, absMaxY - absMinY);
     });
 
     // 2) Points
-    points.forEach((pt) => {
+    keyPoints.forEach((pt) => {
       const classItem = Object.values(classes).find((c) => c.id === pt.classId);
       const color = classItem?.color || "grey";
       const radius = 5;
@@ -171,8 +183,8 @@ function ImageEditor({
       ctx.fill();
     });
 
-    // 3) Segmentation Masks
-    masks.forEach((stroke) => {
+    // 3) Segmentation
+    segmentations.forEach((stroke) => {
       stroke.circles.forEach((circle) => {
         ctx.beginPath();
         ctx.arc(circle.x * width, circle.y * height, brushRadius, 0, 2 * Math.PI);
@@ -185,7 +197,7 @@ function ImageEditor({
   /** Mouse Down */
   const handleMouseDown = (e) => {
     // classId가 null이면 라벨 추가 불가
-    if (image.classId === null) return;
+    if (image.classIds[0] === null) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -198,19 +210,19 @@ function ImageEditor({
     } else if (mode === "point") {
       const relX = x / canvas.width;
       const relY = y / canvas.height;
-      setPoints((prev) => [
+      setKeyPoints((prev) => [
         ...prev,
-        { x: relX, y: relY, classId: image.classId },
+        { x: relX, y: relY, classId: image.classIds[0] },
       ]);
     } else if (mode === "segmentation") {
       setIsDrawing(true);
 
       const relX = x / canvas.width;
       const relY = y / canvas.height;
-      const classItem = classes[image.classId];
+      const classItem = classes[image.classIds[0]];
       const brushColor = classItem?.color || "green";
 
-      setMasks((prev) => [
+      setSegmentations((prev) => [
         ...prev,
         {
           color: brushColor,
@@ -230,7 +242,7 @@ function ImageEditor({
     drawAllAnnotations(ctx);
 
     const { x, y } = getMouseOnCanvas(e);
-    const classItem = classes[image.classId];
+    const classItem = classes[image.classIds[0]];
     const classColor = classItem?.color || "grey";
 
     // 3) 십자선
@@ -259,7 +271,7 @@ function ImageEditor({
       // brush painting
       const relX = x / canvas.width;
       const relY = y / canvas.height;
-      setMasks((prev) => {
+      setSegmentations((prev) => {
         const strokes = [...prev];
         const last = strokes[strokes.length - 1];
         if (last) {
@@ -311,11 +323,11 @@ function ImageEditor({
       setBoundingBoxes((prev) => [
         ...prev,
         {
-          minX: relMinX,
-          minY: relMinY,
-          maxX: relMaxX,
-          maxY: relMaxY,
-          classId: image.classId,
+          xMin: relMinX,
+          yMin: relMinY,
+          xMax: relMaxX,
+          yMax: relMaxY,
+          classId: image.classIds[0],
         },
       ]);
 
@@ -327,18 +339,6 @@ function ImageEditor({
       setIsDrawing(false);
     }
   };
-
-  /** 컴포넌트 언마운트 or 이미지 변경 시 라벨 저장 */
-  useEffect(() => {
-    return () => {
-      saveImage({
-        ...imageRef.current,
-        boundingBoxes: boundingBoxesRef.current,
-        points: pointsRef.current,
-        masks: masksRef.current,
-      });
-    };
-  }, [image.id]);
 
   /** Helper */
   const getMouseOnCanvas = (e) => {
@@ -354,8 +354,8 @@ function ImageEditor({
 
   const handleResetAnnotations = () => {
     setBoundingBoxes([]);
-    setPoints([]);
-    setMasks([]);
+    setKeyPoints([]);
+    setSegmentations([]);
   };
 
   return (
@@ -363,7 +363,7 @@ function ImageEditor({
       <ToolBar mode={mode} setMode={setMode} />
       <ZoomedImageContainer ref={containerRef}>
         <ImageWrapper>
-          <ZoomedImage ref={imgRef} src={image.imageURL} alt="Zoomed" />
+          <ZoomedImage ref={imgRef} src={imageURL} alt="Zoomed" />
           <CanvasOverlay ref={canvasRef} />
         </ImageWrapper>
         <ResetButton onClick={handleResetAnnotations}>Reset</ResetButton>

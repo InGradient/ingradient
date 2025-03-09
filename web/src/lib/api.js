@@ -162,3 +162,40 @@ export async function uploadFile(file) {
   const res = await axios.post(`/api/upload-file`, formData);
   return res.data;
 }
+
+/**
+ * =========================
+ *  4) Labels CRUD
+ * =========================
+ */
+export async function listLabels(imageId) {
+  if (!imageId) return { boundingBoxes: [], keyPoints: [], segmentations: [] };
+
+  console.log("ListLabels:", imageId)
+  const res = await axios.get(`/api/labels`, {
+    params: { image_id: imageId },
+  });
+
+  console.log("Label Received:", imageId, res.data)
+
+  return res.data;
+}
+
+export async function saveLabels({ imageId, boundingBoxes = [], keyPoints = [], segmentations = [] }) {
+  try {
+    console.log("ImageID", imageId)
+    console.log("Bounding Boxes:", boundingBoxes)
+    console.log("KeyPoints:", keyPoints)
+    console.log("Segmentations:", segmentations)
+    const res = await axios.post(`/api/labels`, {
+      imageId,
+      boundingBoxes,
+      keyPoints,
+      segmentations,
+    });
+    return res.data;
+  } catch (error) {
+    console.error("API Error (saveLabels):", error);
+    return { error: error.response?.data || error.message };
+  }
+}

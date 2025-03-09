@@ -17,7 +17,7 @@ from server.db.models import Dataset, Class, Image
 # schemas from crud.py (예: Pydantic 모델)
 from server.db.crud import DatasetCreate, ClassCreate, ImageCreate
 from server.utils import to_camel_case, to_snake_case
-from .cleanup import start_cleanup_worker
+from .core.cleanup import start_cleanup_worker
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")

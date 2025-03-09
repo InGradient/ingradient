@@ -23,7 +23,8 @@ const TagItem = styled.div.withConfig({
   align-items: center;
   justify-content: space-between;
   background-color: var(--background-light);
-  border: ${(props) => (props.isSelected ? `2px solid ${props.color}` : "2px solid var(--background-light)")};
+  border: ${(props) =>
+    props.isSelected ? `2px solid ${props.color}` : "2px solid var(--background-light)"};
   border-radius: 8px;
   padding: 8px;
   cursor: pointer;
@@ -97,7 +98,7 @@ const SuggestionItem = styled.li`
 `;
 
 const generatePastelColor = () => {
-  const random = () => Math.floor(Math.random() * 100 + 155); //128 + 127);
+  const random = () => Math.floor(Math.random() * 100 + 155);
   return `rgb(${random()}, ${random()}, ${random()})`;
 };
 
@@ -117,6 +118,7 @@ const TagManager = ({
   const [suggestions, setSuggestions] = useState([]);
   const [isInputFocused, setIsInputFocused] = useState(false);
 
+  // 선택된 이미지 정보
   const selectedImages = useMemo(() => {
     return selectedImageIds.reduce((result, id) => {
       if (images[id]) {
@@ -124,14 +126,14 @@ const TagManager = ({
       }
       return result;
     }, {});
-  }, [images, selectedImageIds]);  
-  
+  }, [images, selectedImageIds]);
+
+  // 각 태그(ID)에 대해 현재 선택된 이미지에서 얼마나 적용되었는지 계산
   const tagStates = useMemo(() => {
     const states = {};
     Object.values(selectedImages).forEach((image) => {
       const imageClass = image.classIds || "";
       if (imageClass) {
-        // 해당 클래스의 상태를 초기화하거나 카운트를 증가시킴
         states[imageClass] = states[imageClass] || { count: 0, total: 0 };
         states[imageClass].count += 1;
       }
@@ -140,33 +142,34 @@ const TagManager = ({
       states[imageClass].total += 1;
     });
     return states;
-  }, [selectedImages]);   
+  }, [selectedImages]);
 
-  // activeClasses 기준으로 태그 정보 초기화
+  // 컴포넌트가 처음 마운트되거나 activeClasses가 바뀔 때, 로컬 tags 상태를 초기화
   useEffect(() => {
     setTags(activeClasses);
-  }, [activeClasses]);  
+  }, [activeClasses]);
 
+  // 태그 클릭 핸들러
   const handleTagClick = useCallback(
     (tag) => {
       Object.keys(selectedImages).forEach((imageId) => {
         const currentImage = selectedImages[imageId];
-
         const existingClassIds = currentImage.classIds || [];
         const isTagIncluded = existingClassIds.includes(tag.id);
-  
+
+        // 토글 방식으로 해당 태그를 추가/제거
         const updatedImage = {
           ...currentImage,
           id: imageId,
           classIds: isTagIncluded ? [] : [tag.id],
         };
-  
         saveImage(updatedImage);
       });
     },
     [selectedImages, saveImage]
-  );  
-  
+  );
+
+  // 숫자키(1~9)로 태그를 빠르게 토글하도록 하는 로직
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!isInputFocused && /^[1-9]$/.test(e.key)) {
@@ -179,82 +182,84 @@ const TagManager = ({
         }
       }
     };
-  
+
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [handleTagClick, tags, isInputFocused, activeClasses]);
-  
 
+  // 입력값 변경 시 자동완성 제안 리스트 필터링
   const handleInputChange = (e) => {
     const value = e.target.value;
     setInputValue(value);
-  
-    // dict 구조의 classes를 배열로 변환 후 필터링
+
     const filteredSuggestions = Object.values(classes).filter(
       (cls) =>
         cls.name.toLowerCase().startsWith(value.toLowerCase()) &&
         !tags.includes(cls.id)
-    );    
-  
+    );
     setSuggestions(filteredSuggestions);
   };
 
+  // 새 태그 추가 혹은 이미 있는 태그를 사용
   const handleAddTag = (classObj) => {
     if (classObj?.id) {
-      // 기존 클래스 업데이트
+      // 기존 클래스에 이미지/데이터셋을 추가하는 업데이트
       const updatedClassObj = {
         ...classObj,
         imageIds: Array.from(
-          new Set([...(lastClickedImage ? [lastClickedImage.id] : []), ...selectedImageIds])
+          new Set([
+            ...(lastClickedImage ? [lastClickedImage.id] : []),
+            ...selectedImageIds,
+          ])
         ),
         datasetIds: Array.from(new Set([...selectedDatasetIds])),
       };
-  
-      console.log("Add new class", updatedClassObj)
       saveClass(updatedClassObj);
-  
-      const updatedTags = tags.map((tag) =>
-        tag.id === classObj.id ? updatedClassObj : tag
+
+      // 로컬에서도 tags 업데이트
+      // (이미 태그 ID가 있으면 그대로 두거나, 필요한 경우엔 고급 로직 추가)
+      const updatedTags = tags.map((t) =>
+        t.id === classObj.id ? updatedClassObj : t
       );
       setTags(updatedTags);
     } else if (classObj?.name) {
-      // 새로운 클래스 생성
+      // 완전히 새로운 클래스 생성
       const newClass = {
         id: uuidv4(),
         name: classObj.name,
         color: generatePastelColor(),
         imageIds: Array.from(
-          new Set([...(lastClickedImage ? [lastClickedImage.id] : []), ...selectedImageIds])
+          new Set([
+            ...(lastClickedImage ? [lastClickedImage.id] : []),
+            ...selectedImageIds,
+          ])
         ),
         datasetIds: Array.from(new Set([...selectedDatasetIds])),
       };
-  
-      console.log("Created New Class:", newClass)
       saveClass(newClass);
       setTags([...tags, newClass.id]);
     }
-  
+
     setInputValue("");
     setSuggestions([]);
   };
-  
-  /**
-   * 태그(클래스) 제거
-   * - 전역에서 deleteClass
-   * - TagManager 내부에서도 해당 태그 제거
-   */
-  const handleRemoveTag = (classId) => {
-    deleteClass(classId, selectedImageIds, selectedDatasetIds, false); // Remove from global context or wherever
-    const newTags = tags.filter((tag) => tag.id !== classId);
-    setTags(newTags);
 
-    // 혹시 현재 선택 중인 클래스라면, 해제 처리
+  // 태그 제거
+  const handleRemoveTag = (classId) => {
+    deleteClass(classId, selectedImageIds, selectedDatasetIds, false);
+    setTags((prev) => prev.filter((id) => id !== classId));
+
+    // 혹시 lastClickedImage에 같은 클래스가 있으면 해제
     if (lastClickedImage?.class === classId) {
       saveImage(lastClickedImage.id, { class: "" });
     }
   };
+
+  const sortedActiveClasses = activeClasses
+  .filter((id) => !!classes[id]?.createdAt)
+  .sort((a, b) => new Date(classes[b].createdAt) - new Date(classes[a].createdAt));
 
   return (
     <Container>
@@ -265,6 +270,7 @@ const TagManager = ({
           onChange={handleInputChange}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
+              // 엔터 입력 시 자동완성 첫 번째 항목 혹은 신규 태그 추가
               if (suggestions.length > 0) {
                 handleAddTag(suggestions[0]);
               } else if (inputValue.trim()) {
@@ -280,6 +286,7 @@ const TagManager = ({
           <MagnifyingGlass />
         </IconWrapper>
       </InputContainer>
+
       {isInputFocused && suggestions.length > 0 && (
         <SuggestionsList>
           {suggestions.map((suggestion, index) => (
@@ -293,9 +300,9 @@ const TagManager = ({
           ))}
         </SuggestionsList>
       )}
+
       <TagList>
-        {tags.map((tagId) => {
-          // 예시: activeClasses가 배열이라면:
+        {sortedActiveClasses.map((tagId) => {
           const tagObj = classes[tagId] || {};
           const state = tagStates[tagId] || { count: 0 };
           const isSelected = state.count > 0;
