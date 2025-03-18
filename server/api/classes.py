@@ -22,7 +22,6 @@ def list_classes(db: Session = Depends(get_db)):
         result.append(response_data)
     return result
 
-
 @router.post("/{class_id}")
 def upsert_class(
     class_id: str,

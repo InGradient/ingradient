@@ -139,6 +139,8 @@ class Image(Base):
     width = Column(Integer, nullable=True)
     type = Column(String, nullable=True)
     size = Column(Integer, nullable=True)
+    
+    model_id = Column(String, ForeignKey("ai_models.id"), nullable=True)
 
     datasets = relationship(
         "Dataset",
@@ -152,11 +154,11 @@ class Image(Base):
         cascade="save-update, merge"
     )
 
-    # ─────────────── 추가: BoundingBox/KeyPoint/Segmentation 역참조 ───────────────
     bounding_boxes = relationship("BoundingBox", back_populates="image")
     keypoints = relationship("KeyPoint", back_populates="image")
     segmentations = relationship("Segmentation", back_populates="image")
-    # ──────────────────────────────────────────────────────────────────────────────
+    
+    model = relationship("AIModel", back_populates="images")
 
     @property
     def dataset_ids(self):
@@ -243,3 +245,15 @@ class Segmentation(Base):
     # relationships
     image = relationship("Image", back_populates="segmentations")
     class_ = relationship("Class", back_populates="segmentations")
+
+class AIModel(Base):
+    __tablename__ = "ai_models"
+
+    id = Column(String, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    file_location = Column(String, nullable=False)
+    input_width = Column(Integer, nullable=False)
+    input_height = Column(Integer, nullable=False)
+    uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    images = relationship("Image", back_populates="model")

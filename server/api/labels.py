@@ -81,7 +81,6 @@ def list_labels(
     image_id: str = Query(..., description="Retrieve all labels for a specific image"),
     db: Session = Depends(get_db)
 ):
-    print("Received image_id:", image_id)
     """
     특정 image_id에 해당하는 모든 바운딩박스, 키포인트, 세그멘테이션을 조회
     """

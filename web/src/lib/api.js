@@ -59,7 +59,6 @@ export async function listClasses() {
 // [POST] 새로운 Class 생성
 // cls: { id, name, color?, dataset_id? }
 export async function createClass(cls) {
-  console.log("Create Class:", cls);
   const res = await axios.post(`/api/classes`, cls);
   return res.data;
 }
@@ -73,13 +72,11 @@ export async function getClass(classId) {
 // [PUT] Class 수정
 // updatedData: { name?, color?, dataset_id? }
 export async function updateClass(classId, updatedData) {
-  console.log("Updated Class Data:", updatedData);
   const res = await axios.put(`/api/classes/${classId}`, updatedData);
   return res.data;
 }
 
 export async function upsertClass(classId, updatedData) {
-  console.log("Upsert Class ", classId, updatedData)
   const res = await axios.post(`/api/classes/${classId}`, updatedData);
   return res.data;
 }
@@ -118,8 +115,6 @@ export async function createImage(id, file, userId, datasetIds = []) {
   formData.append('id', id);
   formData.append('user_id', userId);
   formData.append('dataset_ids', JSON.stringify(datasetIds)); // 배열은 JSON으로 변환
-
-  console.log("API createImage FormData:", [...formData.entries()]);
 
   try {
     const res = await axios.post(`/api/images`, formData, {
@@ -171,22 +166,15 @@ export async function uploadFile(file) {
 export async function listLabels(imageId) {
   if (!imageId) return { boundingBoxes: [], keyPoints: [], segmentations: [] };
 
-  console.log("ListLabels:", imageId)
   const res = await axios.get(`/api/labels`, {
     params: { image_id: imageId },
   });
-
-  console.log("Label Received:", imageId, res.data)
 
   return res.data;
 }
 
 export async function saveLabels({ imageId, boundingBoxes = [], keyPoints = [], segmentations = [] }) {
   try {
-    console.log("ImageID", imageId)
-    console.log("Bounding Boxes:", boundingBoxes)
-    console.log("KeyPoints:", keyPoints)
-    console.log("Segmentations:", segmentations)
     const res = await axios.post(`/api/labels`, {
       imageId,
       boundingBoxes,

@@ -93,12 +93,16 @@ a:hover {
 /* 5. 버튼 초기화(간단 예시) */
 button {
   cursor: pointer;
-  background-color: var(--blue-500);
+  background-color: var(--accent);
   color: var(--color-white);
   border: none;
   border-radius: 8px;
   padding: 8px 16px;
   height: 40px;
+
+  font-size: var(--font-size-13px);
+  font-weight: 500;
+  font-family: var(--font-family-base);
 }
 
 button:disabled {
@@ -109,8 +113,8 @@ button:disabled {
 
 button.outlined {
   background-color: transparent;
-  border: 1px solid var(--outlined-color, #D0DAE8);
-  color: var(--outlined-color, #000);
+  border: 1px solid var(--accent, #D0DAE8);
+  color: var(--accent, #000);
   border-radius: 8px;
   padding: 8px 16px;
   height: 40px;

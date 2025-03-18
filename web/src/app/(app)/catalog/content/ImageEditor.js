@@ -2,12 +2,14 @@
 
 import React, { useRef, useEffect, useState } from "react";
 import styled from "styled-components";
-import ToolBar from "./Editors/ToolBar";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCircleNodes } from "@fortawesome/free-solid-svg-icons";
+import { DashedBox, RotateLeft, XMark } from "@/components/atoms/Icon";
 
 const ZoomedImageOverlay = styled.div`
   position: fixed;
   top: 0;
-  left: 0;
+  left: 80px;
   right: 300px;  
   bottom: 0;
   background-color: var(--neutral-900);
@@ -31,8 +33,7 @@ const ImageWrapper = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
   max-width: 100%;
   max-height: 100%;
 `;
@@ -51,28 +52,72 @@ const CanvasOverlay = styled.canvas`
   pointer-events: none;
 `;
 
-const ResetButton = styled.button`
+const ToolContainer = styled.div`
   position: absolute;
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  transition: 0.3s;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.30);
+  display: flex;
+  gap: 8px;
+  z-index: 1100;
+  padding: 4px;
+`;
 
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 8px;
+`;
+
+const IconButton = styled.button`
+  width: 56px;
+  height: 56px;
+  border: none;
+  background: ${({ $active }) => ($active ? "var(--accent)" : "white")};
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ $active }) => ($active ? "white" : "var(--color-black)")};
+  transition: background-color 0.3s;
   &:hover {
-    background-color: var(--accent-hover);
+    background-color: ${({ $active }) =>
+      $active ? "var(--accent)" : "var(--accent-hover)"};
+  }
+`;
+
+const CustomDashedBox = styled.div`
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  border: 3px solid ${({ $active }) => ($active ? "white" : "#000")};
+`;
+
+const CloseButton = styled(IconButton)`
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 48px;
+  height: 48px;
+  background: rgba(0, 0, 0, 0.30);
+  color: white;
+  border-radius: 8px;
+  z-index: 1100; /* Add a high z-index here */
+  &:hover {
+    background: rgba(0, 0, 0, 0.40);
   }
 `;
 
 function ImageEditor({ 
-  image, 
-  saveImage,
+  image,
   classes, 
   labels,
   saveLabels,
   onClose 
 }) {
-
-  console.log("Labels:", labels)
   const [boundingBoxes, setBoundingBoxes] = useState(image.boundingBoxes || []);
   const [keyPoints, setKeyPoints] = useState(image.points || []);
   const [segmentations, setSegmentations] = useState(image.segmentations || []);
@@ -88,7 +133,6 @@ function ImageEditor({
   const canvasRef = useRef(null);
   const imgRef = useRef(null);
 
-  // imageRef와 boundingBoxesRef 등은 최신 state 저장용
   const imageRef = useRef(image); 
   const boundingBoxesRef = useRef([]);
   const keyPointsRef = useRef([]);
@@ -104,9 +148,7 @@ function ImageEditor({
     setSegmentations(labels[image.id]?.segmentations || []);
   }, [image.id, labels]);  
 
-  useEffect(() => {
-    imageRef.current = image;
-  }, [image]);
+  useEffect(() => { imageRef.current = image; }, [image]);
 
   useEffect(() => { boundingBoxesRef.current = boundingBoxes; }, [boundingBoxes]);
   useEffect(() => { keyPointsRef.current = keyPoints; }, [keyPoints]);
@@ -197,7 +239,7 @@ function ImageEditor({
   /** Mouse Down */
   const handleMouseDown = (e) => {
     // classId가 null이면 라벨 추가 불가
-    if (image.classIds[0] === null) return;
+    if (image.classIds.length === 0) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -234,6 +276,7 @@ function ImageEditor({
 
   /** Mouse Move */
   const handleMouseMove = (e) => {
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -360,13 +403,28 @@ function ImageEditor({
 
   return (
     <ZoomedImageOverlay onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}>
-      <ToolBar mode={mode} setMode={setMode} />
+      <CloseButton onClick={onClose}>
+        <XMark height="17" width="17" />
+      </CloseButton>
       <ZoomedImageContainer ref={containerRef}>
         <ImageWrapper>
           <ZoomedImage ref={imgRef} src={imageURL} alt="Zoomed" />
           <CanvasOverlay ref={canvasRef} />
         </ImageWrapper>
-        <ResetButton onClick={handleResetAnnotations}>Reset</ResetButton>
+        <ToolContainer>
+          <ButtonGroup>
+            <IconButton onClick={() => setMode("bbox")} $active={mode === "bbox"}>
+              <CustomDashedBox $active={mode === "bbox"} />
+            </IconButton>
+            <IconButton onClick={() => setMode("point")} $active={mode === "point"}>
+              <FontAwesomeIcon icon={faCircleNodes} style={{ fontSize: "20px" }} />
+            </IconButton>
+          </ButtonGroup>
+          <div style={{ width: "16px" }} />
+          <IconButton onClick={handleResetAnnotations}>
+            <RotateLeft />
+          </IconButton>
+        </ToolContainer>
       </ZoomedImageContainer>
     </ZoomedImageOverlay>
   );

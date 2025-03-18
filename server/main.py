@@ -11,7 +11,12 @@ from server.api.images import router as images_router
 from server.api.labels import router as labels_router
 from server.api.uploads import router as uploads_router
 from server.core.config import UPLOAD_DIR, TMP_FOLDER
+from server.api.models import router as model_router
 from server.core.cleanup import start_cleanup_worker
+
+import logging
+
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 
 def create_app() -> FastAPI:
     app = FastAPI()
@@ -34,9 +39,14 @@ def create_app() -> FastAPI:
     app.include_router(images_router, prefix="/api/images", tags=["images"])
     app.include_router(labels_router, prefix="/api/labels", tags=["labels"]) 
     app.include_router(uploads_router, prefix="/api/uploads", tags=["uploads"])
+    app.include_router(model_router, prefix="/api/model", tags=["model"])
 
     app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
+    @app.get("/ping")
+    def ping():
+        return {"message": "pong"}
+    
     return app
 
 app = create_app()

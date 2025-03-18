@@ -122,8 +122,6 @@ export const useMyStore = create((set, get) => ({
       ...state,
       labels: updatedLabels,
     }));
-  
-    console.log("✅ Labels loaded successfully for selected images:", selectedImageIds);
   },  
 
   getActiveImages: (selectedDatasetIds) => {
@@ -470,7 +468,6 @@ export const useMyStore = create((set, get) => ({
   
   deleteImage: async (imageId, selectedDatasetIds) => {
     try {
-      console.log("selectedDatasetIds", selectedDatasetIds)
       const res = await apiDeleteImage(imageId, selectedDatasetIds);
       if (res.error) {
         console.error("Delete image failed:", res.error);
@@ -528,7 +525,6 @@ export const useMyStore = create((set, get) => ({
    * ===================
    */
   createDataset: async (name, userId) => {
-    console.log("createDataset", name);
     const newId = uuidv4();
     const newDataset = {
       id: newId,
@@ -544,7 +540,6 @@ export const useMyStore = create((set, get) => ({
     try {
       // ✅ 서버에 데이터셋 생성 요청
       const createdDataset = await apiCreateDataset(newDataset);
-      console.log("Created dataset:", createdDataset);
 
       // ✅ API 응답에 오류가 없으면 Zustand 상태 업데이트
       if (!createdDataset.error) {
@@ -586,8 +581,6 @@ export const useMyStore = create((set, get) => ({
   },
   
   createImage: async (files, datasetIds, userId) => {
-    console.log("createImage", files, datasetIds);
-  
     const newImages = await Promise.all(
       files.map(async (fw) => {
         const newId = uuidv4();
@@ -661,8 +654,6 @@ export const useMyStore = create((set, get) => ({
     set((state) => {
       const updatedImages = { ...state.images };
       const updatedDatasets = { ...state.datasets };
-
-      console.log("updatedDatasets", updatedDatasets)
   
       validImages.forEach((image) => {
         updatedImages[image.id] = image;
@@ -686,22 +677,31 @@ export const useMyStore = create((set, get) => ({
 
   saveLabels: async ({ imageId, boundingBoxes = [], keyPoints = [], segmentations = [] }) => {
     try {
-      console.log(`🔄 Saving labels for image: ${imageId}`);
-      console.log(`🔄 Saving labels for BoundingBoxes:`, boundingBoxes);
-      console.log(`🔄 Saving labels for keyPoints: `, keyPoints);
-      console.log(`🔄 Saving labels for segmentations:`, segmentations);
-      
-      // API 요청을 병렬로 실행
+      console.log("Saving Labels:", imageId, boundingBoxes);
       const response = await apiSaveLabels({
         imageId,
         boundingBoxes,
         keyPoints,
         segmentations,
       });
-
+  
+      set((state) => ({
+        images: {
+          ...state.images,
+          [imageId]: {
+            ...state.images[imageId],
+            // Use response values if provided; otherwise fallback to current values:
+            boundingBoxes: response.boundingBoxes || boundingBoxes,
+            keyPoints: response.keyPoints || keyPoints,
+            segmentations: response.segmentations || segmentations,
+          },
+        },
+      }));
+  
+      console.log(`✅ Labels saved successfully for image ${imageId}`);
     } catch (error) {
       console.error(`❌ Error saving labels for image ${imageId}:`, error);
     }
-  },
+  },  
   
 }));

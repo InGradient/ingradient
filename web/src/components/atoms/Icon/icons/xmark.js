@@ -1,10 +1,11 @@
 import React from 'react';
 
-const XMark = ({ size = 14 }) => (
+const XMark = ({ width = 14, height = 14, color = "currentColor" }) => (
   <svg
-    width={size}
-    height={size}
+    width={width}
+    height={height}
     viewBox="0 0 15 16"
+    fill={color}
     xmlns="http://www.w3.org/2000/svg"
   >
     <path

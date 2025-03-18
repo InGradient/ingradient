@@ -9,3 +9,4 @@ export { default as ArrowsToLine } from './icons/arrows-to-line';
 export { default as XMark } from './icons/xmark';
 export { default as Trash } from './icons/trash';
 export { default as TriangleExclamation } from './icons/triangle-exclamation';
+export { default as RotateLeft } from './icons/rotate-left';

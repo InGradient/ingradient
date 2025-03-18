@@ -251,7 +251,6 @@ export default function CatalogPage() {
       {isImageEditorOpen && isPropertyVisible && lastClickedImage && (
         <ImageEditor
           image={lastClickedImage}
-          saveImage={saveImage}
           classes={classes}
           labels={labels}
           saveLabels={saveLabels}

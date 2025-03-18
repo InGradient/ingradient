@@ -323,13 +323,13 @@ export default function PropertySection({
         <ToggleButton onClick={toggleDrawer}>
           {isPropertyVisible ? (
             <>
-              <FontAwesomeIcon icon={faChevronLeft} />
-              <FontAwesomeIcon icon={faChevronLeft} />
+              <FontAwesomeIcon icon={faChevronRight} />
+              <FontAwesomeIcon icon={faChevronRight} />
             </>
           ) : (
             <>
-              <FontAwesomeIcon icon={faChevronRight} />
-              <FontAwesomeIcon icon={faChevronRight} />
+              <FontAwesomeIcon icon={faChevronLeft} />
+              <FontAwesomeIcon icon={faChevronLeft} />
             </>
           )}
         </ToggleButton>

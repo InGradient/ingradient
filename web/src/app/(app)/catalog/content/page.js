@@ -445,6 +445,12 @@ const ContentSection = ({
             </DataToolsOption>
           </LeftOptions>
           <FileButtons>
+            <button
+              onClick={() => setImageUploadModalVisible(true)}
+              disabled={selectedDatasetIds.length === 0}
+            >
+              Upload
+            </button>
             <button 
               className="outlined" 
               onClick={handleDelete}
@@ -452,16 +458,13 @@ const ContentSection = ({
             >
               Delete
             </button>
-            <button
-              onClick={() => setImageUploadModalVisible(true)}
-              disabled={selectedDatasetIds.length === 0}
+            <button 
+              className="outlined" 
+              onClick={handleDownloadFiles}
+              // style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}
             >
-              Upload
+              Export
             </button>
-            <InteractiveIcon onClick={handleDownloadFiles}>
-              <i className="fa-solid fa-download"></i>
-            </InteractiveIcon>
-
             {/* Upload Modal */}
             {isImageUploadModalVisible && (
               <UploadModal
