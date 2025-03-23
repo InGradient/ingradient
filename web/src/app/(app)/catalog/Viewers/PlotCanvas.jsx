@@ -5,14 +5,15 @@ import React, {
   useMemo,
   useCallback,
 } from "react";
-import { UMAP } from "umap-js";
 import ColorCriteriaDropdown from "@/components/molecules/ColorCriteriaDropdown";
 import SelectionPanel from "@/components/molecules/SelectionPanel";
 import LoadingOverlay from "@/components/organisms/LoadingOverlay";
 import useLoadingStore from "@/state/loading";
 
 import { getMemoryUsage } from "@/utils/Optimizer";
+import { compressFeatures } from "@/lib/api";
 
+import { listModels } from "@/lib/api";
 
 export default function PlotCanvas({
   images,
@@ -25,7 +26,7 @@ export default function PlotCanvas({
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
 
-  const processedIdsRef = useRef(new Set());
+  // const processedIdsRef = useRef(new Set());
 
   const [reducedData, setReducedData] = useState([]);
   const [umapBoundingBox, setUmapBoundingBox] = useState({
@@ -35,6 +36,7 @@ export default function PlotCanvas({
     maxY: 1,
   });
   // const [loading, setLoading] = useState(true);
+  const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL;
 
   const { startLoading, stopLoading, setProgress, setLoadingStatus } = useLoadingStore();
 
@@ -50,94 +52,117 @@ export default function PlotCanvas({
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
+  const imagesClassIdsSignature = useMemo(() => {
+    return images.map((img) => {
+      const sorted = (img.classIds || []).slice().sort().join(",");
+      return `${img.id}:${sorted}`;
+    }).join("|");
+  }, [images]);
+  
+  // 2) reduceData와 images를 머지하는 함수
+  function mergeReducedData(reducedData, images) {
+    return reducedData.map((rdPoint) => {
+      // 해당 rdPoint와 동일한 id를 가진 image를 찾는다
+      const latestImage = images.find((img) => img.id === rdPoint.id);
+      if (latestImage) {
+        // x,y는 유지하고, 나머지 필드는 latestImage로 갱신
+        return {
+          ...rdPoint,
+          ...latestImage,
+          x: rdPoint.x, // 혹시 ...latestImage에 x,y가 없다면 이 라인은 생략 가능
+          y: rdPoint.y,
+        };
+      } else {
+        // 혹은 없는 경우 그대로 반환 or 제외
+        return rdPoint; 
+      }
+    });
+  }
+  
+  // 3) classIds가 바뀔 때만 merge해서 setReducedData
   useEffect(() => {
-    startLoading();
-    setLoadingStatus("Preparing Dimension Reduction...");
-    if (processedIdsRef.current.size === images.length) {
-      stopLoading();
-      return;
+    if (reducedData.length > 0) {
+      const newMerged = mergeReducedData(reducedData, images);
+      setReducedData(newMerged);
     }
+  }, [imagesClassIdsSignature]);
 
-    setTimeout(async () => {
-      setLoadingStatus("Filtering Images...");
-      const validImages = images.filter((img) => img.model?.dinov2);
-      const rowCount = validImages.length;
-
-      if (rowCount === 0) {
+  /************************************************
+   * 1) 서버로부터 2D 좌표(UMAP) 받아오기
+   ************************************************/
+  useEffect(() => {
+    (async () => {
+      if (!images || images.length === 0) {
         setReducedData([]);
-        stopLoading();
         return;
       }
 
-      const newImages = validImages.filter(
-        (img) => !processedIdsRef.current.has(img.id)
-      );
+      // 1. 서버에 보낼 image IDs와 model id 준비
+      // 예: dinov2 등 실제 모델 ID를 사용
+      const modelCads = await listModels("feature_extract");
+      const targetModel = modelCads.find((m) => m.name === "DinoV2");
+      const modelId = targetModel?.id;
+      const imageIds = images
+        .filter((img) => img.model && img.model[modelId]) 
+        .map((img) => img.id);
 
-      if (newImages.length === 0) {
-        stopLoading();
+      if (imageIds.length === 0) {
+        setReducedData([]);
         return;
       }
 
-      setLoadingStatus("Calculating Dimension Reduction...");
-      getMemoryUsage();
+      try {
+        startLoading();
+        setLoadingStatus("Fetching compressed features from server...");
+        setProgress(0);
 
-      const colCount = validImages[0].model.dinov2.length;
-      const bigFloat32Arr = new Float32Array(rowCount * colCount);
+        // 2. 서버에 요청
+        const res = await compressFeatures(imageIds, modelId, "umap");
 
-      validImages.forEach((img, i) => {
-        bigFloat32Arr.set(img.model.dinov2, i * colCount);
-      });
-
-      const featureMatrix = Array.from({ length: rowCount }, (_, i) =>
-        bigFloat32Arr.subarray(i * colCount, (i + 1) * colCount)
-      );
-
-      const nNeighbors = Math.min(15, rowCount - 1);
-      const umap = new UMAP({ nComponents: 2, nNeighbors });
-
-      console.log("⚡ Initializing UMAP computation...");
-
-      // ✅ UMAP 초기화
-      umap.initializeFit(featureMatrix);
-
-      const totalIterations = 100; // UMAP 내부 iteration 수
-      let progress = 0;
-
-      async function runUMAP() {
-        for (let i = 0; i < totalIterations; i++) {
-          umap.step(); // ✅ 한 스텝씩 실행
-          progress = Math.round(((i + 1) / totalIterations) * 100);
-          setProgress(progress);
-
-          // UI가 업데이트될 시간을 주기 위해 약간의 delay 추가
-          await new Promise((resolve) => setTimeout(resolve, 1));
+        if (res.error) {
+          console.error("compressFeatures error:", res.error);
+          stopLoading();
+          return;
         }
+
+        const { featureCoordinates } = res; 
+        if (!featureCoordinates) {
+          console.warn("No 'featureCoordinates' returned from server");
+          stopLoading();
+          return;
+        }
+
+        // 3. featureCoordinates 예: { "imgId1": [x,y], ... }
+        // 이를 reducedData 형식으로 변환
+        const newReducedData = [];
+        for (const [imgId, [x, y]] of Object.entries(featureCoordinates)) {
+          const original = images.find((img) => img.id === imgId);
+          if (original) {
+            newReducedData.push({
+              ...original,
+              x,
+              y,
+            });
+          }
+        }
+
+        // 4. UMAP 범위 계산
+        if (newReducedData.length > 0) {
+          const minX = Math.min(...newReducedData.map((p) => p.x));
+          const maxX = Math.max(...newReducedData.map((p) => p.x));
+          const minY = Math.min(...newReducedData.map((p) => p.y));
+          const maxY = Math.max(...newReducedData.map((p) => p.y));
+          setUmapBoundingBox({ minX, maxX, minY, maxY });
+        }
+
+        setReducedData(newReducedData);
+
+        stopLoading();
+      } catch (err) {
+        console.error("Dimension reduction error:", err);
+        stopLoading();
       }
-
-      await runUMAP(); // ✅ 비동기 실행
-
-      const embedding = umap.getEmbedding();
-
-      const newReducedData = embedding.map(([x, y], idx) => ({
-        ...validImages[idx],
-        x,
-        y,
-      }));
-
-      const minX = Math.min(...newReducedData.map((p) => p.x));
-      const maxX = Math.max(...newReducedData.map((p) => p.x));
-      const minY = Math.min(...newReducedData.map((p) => p.y));
-      const maxY = Math.max(...newReducedData.map((p) => p.y));
-
-      setReducedData(newReducedData);
-      setUmapBoundingBox({ minX, maxX, minY, maxY });
-
-      processedIdsRef.current = new Set(validImages.map((img) => img.id));
-
-      console.log("✅ UMAP finished, stopping loading...");
-      stopLoading();
-      getMemoryUsage();
-    }, 0);
+    })();
   }, [images?.length]);
 
   function resizeCanvas() {
@@ -163,7 +188,7 @@ export default function PlotCanvas({
 
   function computePointColor(point) {
     if (criteria === "Class") {
-      const classColor = classes.find((c) => c.id === point.classId)?.color;
+      const classColor = classes.find((c) => c.id === point.classIds?.[0])?.color;
       return classColor || "grey";
     }
     if (criteria === "Edited At" || criteria === "Uploaded At") {
@@ -206,6 +231,7 @@ export default function PlotCanvas({
     [umapBoundingBox, offset, scale]
   );
 
+  // 캔버스 좌표 → 데이터 좌표
   const canvasToData = useCallback(
     (canvasX, canvasY) => {
       const canvas = canvasRef.current;
@@ -240,6 +266,7 @@ export default function PlotCanvas({
       ctx.beginPath();
       ctx.arc(x, y, 5, 0, Math.PI * 2);
       ctx.fill();
+      // 선택 여부 시각화
       if (selectedPoints.includes(point.id)) {
         ctx.strokeStyle = "#000";
         ctx.lineWidth = 2;
@@ -251,13 +278,7 @@ export default function PlotCanvas({
       ctx.strokeStyle = "rgba(0,0,0,0.4)";
       ctx.strokeRect(x, y, width, height);
     }
-  }, [
-    reducedData,
-    dataToCanvas,
-    computePointColor,
-    selectedPoints,
-    selectionBox,
-  ]);
+  }, [reducedData, dataToCanvas, computePointColor, selectedPoints, selectionBox]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -272,7 +293,7 @@ export default function PlotCanvas({
   useEffect(() => {
     resizeCanvas();
     draw();
-  }, [reducedData, scale, offset, selectionBox, selectedPoints, criteria, draw]);
+  }, [imagesClassIdsSignature, scale, offset, selectionBox, selectedPoints, criteria, draw]);  
 
   function getMousePosition(e) {
     const canvas = canvasRef.current;
@@ -487,7 +508,11 @@ export default function PlotCanvas({
             }}
           >
             <img
-              src={hoveredPoint.imageURL}
+              src={
+                hoveredPoint.thumbnailLocation
+                  ? `${SERVER_BASE_URL}/${hoveredPoint.thumbnailLocation}`
+                  : hoveredPoint.imageURL
+              }
               alt={hoveredPoint.filename}
               style={{
                 width: "100px",

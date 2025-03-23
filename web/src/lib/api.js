@@ -187,3 +187,93 @@ export async function saveLabels({ imageId, boundingBoxes = [], keyPoints = [], 
     return { error: error.response?.data || error.message };
   }
 }
+
+/**
+ * =========================
+ *  5) Model CRUD & Inference
+ * =========================
+ */
+
+// [POST] 모델 파일 업로드
+// modelFile: File 객체, modelName: 문자열, inputWidth, inputHeight: 숫자, purpose: 문자열
+export async function uploadModel(modelFile, modelName, inputWidth, inputHeight, purpose) {
+  const formData = new FormData();
+  formData.append("model_file", modelFile);  // 파일 전송
+  formData.append("model_name", modelName);
+  formData.append("input_width", inputWidth);
+  formData.append("input_height", inputHeight);
+  formData.append("purpose", purpose);  // 추가된 purpose 필드
+
+  try {
+    const res = await axios.post(`/api/model/upload`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return res.data;
+  } catch (error) {
+    console.error("API Error (uploadModel):", error);
+    return { error: error.response?.data || error.message };
+  }
+}
+
+// [GET] 등록된 모델 목록 조회
+// purpose 값이 주어지면 해당 목적에 맞는 모델만 반환, 아니면 전체 모델 반환
+export async function listModels(purpose = "") {
+  try {
+    const res = await axios.get(`/api/model/list`, {
+      params: { purpose }
+    });
+    return res.data;
+  } catch (error) {
+    console.error("API Error (listModels):", error);
+    return { error: error.response?.data || error.message };
+  }
+}
+
+
+// [POST] 모델 feature 추출
+// modelId: 모델의 ID (문자열), imageId: 이미지의 ID (문자열)
+export async function extractFeatures(modelId, imageId) {
+  const formData = new FormData();
+  formData.append("model_id", modelId);
+  formData.append("image_id", imageId);
+
+  try {
+    const res = await axios.post(`/api/model/extract_features`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return res.data;
+  } catch (error) {
+    console.error("API Error (extractFeatures):", error);
+    return { error: error.response?.data || error.message };
+  }
+}
+
+/**
+ * [GET] 이미지 feature 차원 축소 호출
+ * 
+ * @param {string[]} imageIds - 조회할 데이터셋 ID 목록
+ * @param {string} modelId - 차원 축소할 feature를 가진 모델의 ID
+ * @param {string} [method="umap"] - 차원 축소 방법 (기본: "umap")
+ * @returns {Promise<object>} - { featureCoordinates: { image_id: [x, y], ... } }
+ */
+export async function compressFeatures(imageIds, modelId, method = "umap") {
+  try {
+    const res = await axios.get(`/api/model/compress_features`, {
+      params: { 
+        image_ids: imageIds,
+        model_id: modelId,
+        method: method
+      },
+      // 배열 파라미터의 직렬화를 위해 qs 사용
+      paramsSerializer: (params) => qs.stringify(params, { arrayFormat: "repeat" }),
+    });
+    return res.data;
+  } catch (error) {
+    console.error("API Error (compressFeatures):", error);
+    return { error: error.response?.data || error.message };
+  }
+}

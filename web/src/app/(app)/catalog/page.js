@@ -224,6 +224,7 @@ export default function CatalogPage() {
         saveImage={saveImage}
         deleteImage={deleteImage}
         selectedDatasetIds={selectedDatasetIds}
+        classes={classes}
         activeClasses={activeClasses}
         isSidebarVisible={isSidebarVisible}
         setIsSidebarVisible={setIsSidebarVisible}

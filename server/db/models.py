@@ -1,4 +1,5 @@
 import enum
+from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy import (
     Column, Integer, String, DateTime, JSON, Enum, ForeignKey, Float
 )
@@ -20,41 +21,44 @@ class RoleEnum(str, enum.Enum):
 
 class User(Base):
     __tablename__ = "users"
-
     id = Column(String, primary_key=True, index=True)
     username = Column(String, unique=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     project_users = relationship("ProjectUser", back_populates="user")
-    projects = relationship("Project", secondary="project_users", back_populates="users")
+    projects = relationship(
+        "Project",
+        secondary="project_users",
+        back_populates="users",
+        overlaps="project_users,user,projects"  # added overlaps here
+    )
 
 
 class Project(Base):
     __tablename__ = "projects"
-
     id = Column(String, primary_key=True, index=True)
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     project_users = relationship("ProjectUser", back_populates="project")
-    users = relationship("User", secondary="project_users", back_populates="projects")
+    users = relationship(
+        "User",
+        secondary="project_users",
+        back_populates="projects",
+        overlaps="project_users,users,projects"  # added overlaps here
+    )
     datasets = relationship("Dataset", secondary=project_datasets, back_populates="projects")
 
 
 class ProjectUser(Base):
-    """
-    Project ↔ User 사이의 중간 테이블(Association Object).
-    `role` 컬럼을 추가로 저장하기 위해 별도 모델로 선언.
-    """
     __tablename__ = "project_users"
-
     project_id = Column(String, ForeignKey("projects.id"), primary_key=True)
     user_id = Column(String, ForeignKey("users.id"), primary_key=True)
     role = Column(Enum(RoleEnum), default=RoleEnum.viewer, nullable=False)
 
-    project = relationship("Project", back_populates="project_users")
-    user = relationship("User", back_populates="project_users")
+    project = relationship("Project", back_populates="project_users", overlaps="users,project_users")
+    user = relationship("User", back_populates="project_users", overlaps="projects,project_users")
 
 
 class Dataset(Base):
@@ -127,7 +131,7 @@ class Image(Base):
     thumbnail_location = Column(String, nullable=True)
     upload_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    properties = Column(JSON, nullable=True, default={"description": "", "comment": ""})
+    properties = Column(MutableDict.as_mutable(JSON), nullable=True, default=lambda: {"description": "", "comment": ""})
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     approval = Column(String, nullable=True)
     comment = Column(String, nullable=True)
@@ -140,8 +144,6 @@ class Image(Base):
     type = Column(String, nullable=True)
     size = Column(Integer, nullable=True)
     
-    model_id = Column(String, ForeignKey("ai_models.id"), nullable=True)
-
     datasets = relationship(
         "Dataset",
         secondary=dataset_images,
@@ -158,7 +160,11 @@ class Image(Base):
     keypoints = relationship("KeyPoint", back_populates="image")
     segmentations = relationship("Segmentation", back_populates="image")
     
-    model = relationship("AIModel", back_populates="images")
+    image_features = relationship(
+        "ImageFeature",
+        back_populates="image",
+        cascade="all, delete-orphan"
+    )
 
     @property
     def dataset_ids(self):
@@ -167,6 +173,11 @@ class Image(Base):
     @property
     def class_ids(self):
         return [cls.id for cls in self.classes]
+    
+    @property
+    def extracted_features(self):
+        return {feat.model_id: feat.feature_id for feat in self.image_features}
+
 
 class BoundingBox(Base):
     __tablename__ = "bounding_boxes"
@@ -254,6 +265,22 @@ class AIModel(Base):
     file_location = Column(String, nullable=False)
     input_width = Column(Integer, nullable=False)
     input_height = Column(Integer, nullable=False)
+    purpose = Column(String, nullable=True) 
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    images = relationship("Image", back_populates="model")
+    image_features = relationship("ImageFeature", back_populates="model")
+
+
+class ImageFeature(Base):
+    __tablename__ = "image_features"
+    
+    image_id = Column(String, ForeignKey("images.id"), primary_key=True)
+    model_id = Column(String, ForeignKey("ai_models.id"), primary_key=True)
+    
+    feature_id = Column(String, nullable=False)
+    feature_int_id = Column(Integer, nullable=False) 
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    image = relationship("Image", back_populates="image_features")
+    model = relationship("AIModel", back_populates="image_features")

@@ -253,6 +253,7 @@ const ContentSection = ({
   saveImage,
   deleteImage,
   selectedDatasetIds,
+  classes,
   activeClasses,
   isSidebarVisible,
   setIsSidebarVisible,
@@ -624,7 +625,7 @@ const ContentSection = ({
             {/* {console.log("🎯 PlotCanvas 렌더링됨")} */}
             <PlotCanvas
               images={sortedData}
-              classes={activeClasses}
+              classes={activeClasses.map((id) => classes[id]).filter(Boolean)}
               selectedPoints={selectedImageIds}
               setSelectedPoints={setSelectedImageIds}
             />

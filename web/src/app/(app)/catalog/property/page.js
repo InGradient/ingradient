@@ -8,11 +8,11 @@ import {
   faChevronRight
 } from "@fortawesome/free-solid-svg-icons";
 
-import MODELS from "@/config/models";
-import { runDinov2Model } from "@/lib/onnx";
 import TagManager from "@/components/molecules/TagManager";
 import useLoadingStore from "@/state/loading";
+import { uploadModel, listModels, extractFeatures } from "@/lib/api";
 
+// styled-components (생략된 스타일은 기존과 동일)
 const PropertyContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -23,7 +23,7 @@ const PropertyContainer = styled.div`
 `;
 
 const TitleHeader = styled.div`
-  padding: 16px 16px 16px 16px;
+  padding: 16px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -104,13 +104,6 @@ const ToggleButton = styled.button`
   }
 `;
 
-const Thumbnail = styled.img`
-  width: 100%;
-  object-fit: cover;
-  margin-bottom: 8px;
-  border-radius: 8px;
-`;
-
 const EditableTextarea = styled.textarea`
   width: 100%;
   min-height: 80px;
@@ -180,15 +173,32 @@ export default function PropertySection({
 }) {
   const [selectedButton, setSelectedButton] = useState(null);
   const { startLoading, stopLoading, setProgress, setLoadingStatus } = useLoadingStore();
-  const [description, setDescription] = useState(
-    lastClickedImage.properties?.description || ""
-  );
-  const [memo, setMemo] = useState(lastClickedImage.comment || "")
+  const [description, setDescription] = useState(lastClickedImage.properties?.description || "");
+  const [memo, setMemo] = useState(lastClickedImage.comment || "");
+  
+  // 서버에서 받아온 모델 목록 (예: "feature_extract" 용도만 필터링)
+  const [models, setModels] = useState([]);
 
   useEffect(() => {
     setDescription(lastClickedImage.properties?.description || "");
     setMemo(lastClickedImage.comment || "");
   }, [lastClickedImage]);
+
+  useEffect(() => {
+    // 컴포넌트 마운트 시 서버에서 모델 목록 가져오기
+    // 특정 purpose만 받고 싶다면 listModels("feature_extract")
+    // 전체 모델을 받고 싶다면 listModels() 형태로 호출
+    async function fetchModels() {
+      try {
+        // "feature_extract" 용도 모델만 가져오는 경우
+        const res = await listModels("feature_extract");
+        setModels(res);
+      } catch (error) {
+        console.error("Failed to fetch models:", error);
+      }
+    }
+    fetchModels();
+  }, []);
 
   const toggleButtonSelection = (button) => {
     setSelectedButton((prev) => (prev === button ? null : button));
@@ -199,13 +209,12 @@ export default function PropertySection({
       ...lastClickedImage.properties,
       description,
     };
-  
     saveImage({
       ...lastClickedImage,
       properties: newProperties,
     });
   };
-  
+
   const handleMemoBlur = () => {
     saveImage({
       ...lastClickedImage,
@@ -214,36 +223,37 @@ export default function PropertySection({
   };
 
   /**
-   * [C] 선택된 모델에 대해 예측되지 않은 이미지를 대상으로 Inference 실행
+   * [C] 특정 모델(서버에서 받아온)로 아직 예측되지 않은 이미지를 대상으로 Inference 실행
    */
-  const runModelInference = async (modelName) => {
+  const runModelInference = async (modelRecord) => {
+    // image.model는 { [modelID]: features, ... } 형태로 저장되어 있다고 가정
     const notPredictedImages = Object.values(images).filter(
       (img) =>
-        selectedImageIds.includes(img.id) && !img.model?.[modelName]
+        selectedImageIds.includes(img.id) && 
+        (!img.model || !img.model[modelRecord.id])
     );
-  
+
     if (notPredictedImages.length === 0) {
       alert("All selected images are already processed by this model.");
       return;
     }
-  
+
     // 로딩 시작
     startLoading();
     setProgress(0);
     setLoadingStatus("Starting inference...");
-  
+
     try {
       const updatedImages = await extractFeaturesForSelectedImages(
         notPredictedImages,
-        modelName
+        modelRecord.id
       );
-  
-      // 결과를 업데이트
+
+      // 각 이미지 객체의 model 필드에 [modelID]: features 를 추가
       updatedImages.forEach((updated) => {
         saveImage(updated);
       });
-  
-      console.log("Feature extraction complete.");
+
     } catch (error) {
       console.error("Error during feature extraction:", error);
     } finally {
@@ -252,70 +262,83 @@ export default function PropertySection({
     }
   };
 
-  const allModelNames = Object.keys(MODELS);
-  
   /**
-   * [B] 선택된 이미지 목록에 대해 실제 추론을 수행하는 함수
-   *     → 여기에서 progress와 status를 갱신하며 LoadingOverlay를 제어.
+   * 선택된 이미지들에 대해 서버 API extractFeatures 호출
+   * - image.id 를 전달하여 서버에서 직접 이미지 파일 로딩 & 추론
    */
-  const extractFeaturesForSelectedImages = async (selectedImages, modelName, batchSize = 20) => {
+  const extractFeaturesForSelectedImages = async (selectedImages, modelId, batchSize = 20) => {
     const updatedImages = [];
     const totalImages = selectedImages.length;
-  
+
     for (let batchIndex = 0; batchIndex < Math.ceil(totalImages / batchSize); batchIndex++) {
       const startIdx = batchIndex * batchSize;
       const batch = selectedImages.slice(startIdx, startIdx + batchSize);
-  
+
       for (let i = 0; i < batch.length; i++) {
         const currentIndex = startIdx + i;
         const image = batch[i];
         try {
-          // 상태 업데이트
+          // 진행 상태 업데이트
           setProgress(Math.round((currentIndex / totalImages) * 100));
           setLoadingStatus(`[${currentIndex}/${totalImages}] Processing: ${image.filename}`);
-  
-          // 모델 실행
-          const extractedFeatures = await runDinov2Model(image.fileLocation);
-          
-          // 결과 업데이트
+
+          // 실제 서버 API 호출 (modelId, image.id)
+          const result = await extractFeatures(modelId, image.id);
+
+          const featureId = result.featureId;
           updatedImages.push({
             ...image,
             model: {
               ...image.model,
-              [modelName]: extractedFeatures,
+              [modelId]: featureId,  // 이제 "featureId"를 넣어준다
             },
           });
-  
-          // **명시적 메모리 해제**
-          if (typeof extractedFeatures.dispose === "function") {
-            extractedFeatures.dispose(); // WebAssembly 메모리 해제
-          }
         } catch (error) {
           console.error(`Failed to process image ${image.id}:`, error);
         }
       }
     }
-  
+
     return updatedImages;
   };
 
+  /**
+   * 모델 목록 + 선택된 이미지들로 모델별 예측 상태를 집계
+   * - 예) modelsWithCounts[modelID] = { name, total, notPredicted }
+   */
   const modelsWithCounts = useMemo(() => {
     const result = {};
+    if (!models.length) return result;
+
+    models.forEach((model) => {
+      // 초기값 설정
+      result[model.id] = {
+        name: model.name,
+        total: selectedImageIds.length, // 선택된 이미지 수
+        notPredicted: 0,
+      };
+    });
+
+    // 각 모델별로 예측되지 않은 이미지 수 계산
     selectedImageIds.forEach((id) => {
       const image = images[id];
-      allModelNames.forEach((modelName) => {
-        const hasPrediction = image?.model?.[modelName];
-        if (!result[modelName]) {
-          result[modelName] = { total: 0, notPredicted: 0 };
-        }
-        result[modelName].total += 1;
-        if (!hasPrediction) {
-          result[modelName].notPredicted += 1;
+      if (!image || !image.model) {
+        // model 정보 자체가 없으면 모든 모델에 대해 notPredicted 처리
+        models.forEach((model) => {
+          result[model.id].notPredicted += 1;
+        });
+        return;
+      }
+    
+      models.forEach((model) => {
+        if (!image.model[model.id]) {
+          result[model.id].notPredicted += 1;
         }
       });
-    });
+    });    
+
     return result;
-  }, [selectedImageIds, images]);
+  }, [selectedImageIds, images, models]);
 
   return (
     <PropertyContainer>
@@ -376,34 +399,25 @@ export default function PropertySection({
           <DetailsWrapper>
             <h3>Inference By</h3>
             <ChipContainer>
-              {Object.entries(modelsWithCounts).map(
-                ([modelName, { total, notPredicted }]) =>
-                  selectedImageIds.length > 1 && notPredicted > 0 ? (
+              {models.length > 0 &&
+                Object.entries(modelsWithCounts).map(
+                  ([modelId, { name, total, notPredicted }]) => (
                     <Chip
-                      key={modelName}
-                      isActive={notPredicted === 0}
+                      key={modelId}
+                      isActive={notPredicted === 0} 
                       onClick={() => {
+                        // notPredicted가 0이면 이미 전부 예측됨
                         if (notPredicted > 0) {
-                          runModelInference(modelName);
+                          const modelRecord = models.find((m) => m.id === modelId);
+                          if (modelRecord) runModelInference(modelRecord);
                         }
                       }}
                     >
-                      {modelName} ({notPredicted}/{total})
-                    </Chip>
-                  ) : (
-                    <Chip
-                      key={modelName}
-                      isActive={notPredicted === 0}
-                      onClick={() => {
-                        if (notPredicted > 0) {
-                          runModelInference(modelName);
-                        }
-                      }}
-                    >
-                      {modelName}
+                      {/* 예: 모델이름 (미예측/전체) */}
+                      {name} ({total - notPredicted}/{total})
                     </Chip>
                   )
-              )}
+                )}
             </ChipContainer>
           </DetailsWrapper>
 

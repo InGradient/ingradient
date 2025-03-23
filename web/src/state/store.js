@@ -374,6 +374,21 @@ export const useMyStore = create((set, get) => ({
     const { id } = data;
   
     try {
+      // 1) 기존 properties 병합
+      const currentProps = get().images[id]?.properties || { description: "", comment: "" };
+      const mergedProps = {
+        ...currentProps,
+        ...data.properties,
+      };
+      
+      // 2) **기존 model 병합**
+      const currentModel = get().images[id]?.model || {};
+      const mergedModel = {
+        ...currentModel,
+        ...data.model, // 만약 data.model이 있다면 병합
+      };
+  
+      // 3) 서버에 보낼 이미지
       const newImage = {
         id,
         filename: data.filename || "untitled.png",
@@ -387,7 +402,7 @@ export const useMyStore = create((set, get) => ({
         width: data.width || null,
         type: data.file?.type || null,
         size: data.file?.size || null,
-        properties: data.properties || { description: "", comment: "" },
+        properties: mergedProps,
       };
   
       const serverResponse = await apiUpsertImage(id, newImage);
@@ -416,7 +431,6 @@ export const useMyStore = create((set, get) => ({
       // ✅ Zustand 상태 업데이트: 이미지 & 데이터셋 업데이트
       set((state) => {
         const { datasetIds = [], classIds = null } = newImage;
-  
         const newImages = {
           ...state.images,
           [id]: {
@@ -424,6 +438,9 @@ export const useMyStore = create((set, get) => ({
             ...newImage,
             datasetIds,
             classIds,
+  
+            // 여기서도 model 필드를 제대로 반영
+            model: mergedModel,
           },
         };
   

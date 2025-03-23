@@ -1,11 +1,9 @@
 # my_app/core/config.py
 import os
 
-# 기본 디렉토리 설정
-# BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-# print("BASE_DIR", BASE_DIR)
+DATABASE_URL = "sqlite:///./ingradient.db"
 UPLOAD_DIR = "../uploads"
-MODEL_UPLOAD_DIR = '../models'
+MODEL_UPLOAD_DIR = 'uploads/models'
 TMP_FOLDER = "../.tmp"
 
 # 폴더 자동 생성

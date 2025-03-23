@@ -19,13 +19,13 @@ def list_images(dataset_ids: Optional[List[str]] = Query(None), db: Session = De
     - 각 이미지에는 연결된 클래스 목록(classIds)도 포함
     """
     if dataset_ids:
-        # dataset_ids에 연결된 이미지들을 distinct()로 중복 제거
         images = db.query(Image).join(Image.datasets).filter(Dataset.id.in_(dataset_ids)).distinct().all()
     else:
         images = db.query(Image).all()
     
     results = []
     for img in images:
+        print("img.extracted_features", img.extracted_features)
         results.append({
             "id": img.id,
             "filename": img.filename,
@@ -37,6 +37,7 @@ def list_images(dataset_ids: Optional[List[str]] = Query(None), db: Session = De
             "comment": img.comment,
             "classIds": [cls.id for cls in img.classes],
             "properties": img.properties,
+            "model": img.extracted_features 
         })
     
     return results
@@ -46,19 +47,38 @@ def get_image(image_id: str, db: Session = Depends(get_db)):
     img = db.query(Image).filter(Image.id == image_id).first()
     if not img:
         return {"error": "Image not found"}
-    return img
+    
+    return {
+        "id": img.id,
+        "filename": img.filename,
+        "fileLocation": img.file_location,
+        "thumbnailLocation": img.thumbnail_location,
+        "width": img.width,
+        "height": img.height,
+        "approval": img.approval,
+        "comment": img.comment,
+        "classIds": [cls.id for cls in img.classes],
+        "properties": img.properties,
+        "model": img.extracted_features
+    }
 
 @router.post("/{image_id}")
 def upsert_image(image_id: str, updated_data: dict = Body(...), db: Session = Depends(get_db)):
-    # ✅ 요청 데이터(`camelCase` → `snake_case` 변환)
     updated_data = {to_snake_case(k): v for k, v in updated_data.items()}
 
     new_dataset_ids = updated_data.pop("dataset_ids", None)
     new_class_ids = updated_data.pop("class_ids", None)
 
-    updated_data.setdefault("properties", {"description": "", "comment": ""})
-
     img = db.query(Image).filter(Image.id == image_id).first()
+
+    current_props = img.properties if img and img.properties else {"description": "", "comment": ""}
+
+    if "properties" in updated_data:
+        new_props = updated_data["properties"] or {}
+        merged_props = {**current_props, **new_props}
+        updated_data["properties"] = merged_props
+    else:
+        updated_data["properties"] = current_props
 
     if img:
         for field, value in updated_data.items():
@@ -72,46 +92,33 @@ def upsert_image(image_id: str, updated_data: dict = Body(...), db: Session = De
         db.refresh(img)
 
     if new_dataset_ids is not None:
-        # 현재 연결된 dataset들의 ID를 가져오기
         existing_dataset_ids = {ds.id for ds in img.datasets}
-
-        # 추가할 dataset 찾기 (이미 연결되지 않은 dataset만 추가)
         datasets_to_add = [db.query(Dataset).filter(Dataset.id == dataset_id).first()
-                        for dataset_id in new_dataset_ids if dataset_id not in existing_dataset_ids]
-
-        # dataset 추가
-        img.datasets.extend(filter(None, datasets_to_add))  # None이 아닌 값만 추가
-
+                           for dataset_id in new_dataset_ids if dataset_id not in existing_dataset_ids]
+        img.datasets.extend(filter(None, datasets_to_add))
         db.commit()
         db.refresh(img)
 
     if new_class_ids is not None:
         existing_class_ids = {cls.id for cls in img.classes}
-
-        # 추가할 class 찾기
         classes_to_add = [db.query(Class).filter(Class.id == class_id).first()
-                        for class_id in new_class_ids if class_id not in existing_class_ids]
-
-        # 기존 관계 제거 후 새 class만 추가
+                          for class_id in new_class_ids if class_id not in existing_class_ids]
         img.classes.clear()
         img.classes.extend(filter(None, classes_to_add))
-
         db.commit()
         db.refresh(img)
 
-
-    # ✅ 응답(`snake_case` → `camelCase` 변환)
     img_dict = img.__dict__.copy()
     response_data = {
         to_camel_case(k): v
         for k, v in img_dict.items()
-        if not k.startswith("_")  # SQLAlchemy 내부 필드 제거
+        if not k.startswith("_")
     }
-
     response_data["datasetIds"] = [ds.id for ds in img.datasets]
     response_data["classIds"] = [cls.id for cls in img.classes]
 
     return response_data
+
 
 @router.delete("/{image_id}")
 def delete_image(

@@ -6,3 +6,6 @@ pillow
 python-multipart
 requests
 sqlalchemy
+onnxruntime
+faiss-cpu==1.7.4
+umap-learn
