@@ -371,7 +371,12 @@ export default function DatasetSection({
             <DialogActions>
               <button
                 onClick={() => setDeleteConfirm({ show: false, id: null })}
-                className="cancel"
+                className="outlined"
+                style={{
+                  color: 'var(--color-warning)',
+                  borderColor: 'var(--color-warning)',
+                  backgroundColor: 'transparent',
+                }}
               >
                 Cancel
               </button>
@@ -404,7 +409,12 @@ export default function DatasetSection({
                 onClick={() =>
                   setRenameDialog({ show: false, id: null, currentName: "" })
                 }
-                className="cancel"
+                className="outlined"
+                style={{
+                  color: 'var(--color-warning)',
+                  borderColor: 'var(--color-warning)',
+                  backgroundColor: 'transparent',
+                }}
               >
                 Cancel
               </button>
@@ -429,7 +439,15 @@ export default function DatasetSection({
               />
             </DialogContent>
             <DialogActions>
-              <button onClick={() => setAddDialog(false)} className="cancel">
+              <button 
+                onClick={() => setAddDialog(false)}
+                className="outlined"
+                style={{
+                  color: 'var(--color-warning)',
+                  borderColor: 'var(--color-warning)',
+                  backgroundColor: 'transparent',
+                }}
+              >
                 Cancel
               </button>
               <button onClick={handleCreateDataset}>Add</button>

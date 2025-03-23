@@ -20,17 +20,6 @@ const LayoutContainer = styled.div`
   flex-direction: column;
 `;
 
-const LoadingContainer = styled.div`
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #f4f4f4;
-  font-size: 1.5rem;
-  color: #666;
-`;
-
 export default function ClientLayout({ children }) {
   const [isMounted, setIsMounted] = useState(false);
 

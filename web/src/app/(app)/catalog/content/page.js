@@ -41,9 +41,16 @@ const Content = styled.div`
   flex-direction: column;
   padding: 16px;
   overflow: auto;
-  
+
   container-type: inline-size;
   container-name: contentContainer;
+
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE/Edge */
+
+  &::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari */
+  }
 `;
 
 const ToggleButton = styled.button`
