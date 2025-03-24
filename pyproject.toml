@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ingradient"
+version = "0.1.0"
+description = "Ingradient - A labeling and dataset management tool"
+readme = "README.md"
+requires-python = ">=3.7"
+license = "Apache-2.0"
+authors = [
+  {name = "JUNE LEE", email = "june@ingradient.ai"},
+]
+dependencies = [
+  "fastapi",
+  "uvicorn",
+  "requests",
+  "pydantic",
+  "click"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/ingradient/ingradient"
+
+[project.scripts]
+ingradient = "ingradient.cli:main"
