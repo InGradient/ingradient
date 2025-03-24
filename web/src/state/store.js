@@ -371,6 +371,7 @@ export const useMyStore = create((set, get) => ({
    * ===================
    */
   saveImage: async (data) => {
+    console.log("Data for Save Image", data)
     const { id } = data;
   
     try {
@@ -400,8 +401,8 @@ export const useMyStore = create((set, get) => ({
         comment: data.comment || "",
         height: data.height || null,
         width: data.width || null,
-        type: data.file?.type || null,
-        size: data.file?.size || null,
+        type: data.type || null,
+        size: data.size || null,
         properties: mergedProps,
       };
   

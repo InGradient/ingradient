@@ -98,78 +98,78 @@ export const handleFileUpload = ({ files, type, errorMessages, setState, existin
   });
 };
 
-/**
- * droppedFiles 배열을 받아 서버에 임시 업로드
- * - 파일별로 AbortController를 생성하여 취소 가능
- * - onProgress: (progressInfo) => {} 형태 콜백
- *    progressInfo: { index, loaded, total, fileId? ... }
- */
-// fileHandler.js
-export function uploadFiles(droppedFiles, sessionId, onProgress, onFileComplete) {
-  const controllers = [];
-  const promises = [];
+// /**
+//  * droppedFiles 배열을 받아 서버에 임시 업로드
+//  * - 파일별로 AbortController를 생성하여 취소 가능
+//  * - onProgress: (progressInfo) => {} 형태 콜백
+//  *    progressInfo: { index, loaded, total, fileId? ... }
+//  */
+// // fileHandler.js
+// export function uploadFiles(droppedFiles, sessionId, onProgress, onFileComplete) {
+//   const controllers = [];
+//   const promises = [];
 
-  droppedFiles.forEach((file, index) => {
-    const controller = new AbortController();
-    controllers.push(controller);
+//   droppedFiles.forEach((file, index) => {
+//     const controller = new AbortController();
+//     controllers.push(controller);
 
-    const formData = new FormData();
-    formData.append("file", file);
-    // 여기서 session_id를 추가합니다.
-    formData.append("session_id", sessionId);
+//     const formData = new FormData();
+//     formData.append("file", file);
+//     // 여기서 session_id를 추가합니다.
+//     formData.append("session_id", sessionId);
 
-    const uploadPromise = axios.post("/api/uploads/upload-temp", formData, {
-      signal: controller.signal,
-      onUploadProgress: (evt) => {
-        if (evt.total) {
-          const progress = (evt.loaded / evt.total) * 100;
-          onProgress({ index, progress });
-        }
-      },
-    })
-      .then((res) => {
-        onFileComplete({
-          index,
-          status: "success",
-          fileId: res.data.fileId,
-          filename: res.data.filename,
-        });
-      })
-      .catch((error) => {
-        onFileComplete({
-          index,
-          status: "failure",
-          error: error.message,
-        });
-      });
+//     const uploadPromise = axios.post("/api/uploads/upload-temp", formData, {
+//       signal: controller.signal,
+//       onUploadProgress: (evt) => {
+//         if (evt.total) {
+//           const progress = (evt.loaded / evt.total) * 100;
+//           onProgress({ index, progress });
+//         }
+//       },
+//     })
+//       .then((res) => {
+//         onFileComplete({
+//           index,
+//           status: "success",
+//           fileId: res.data.fileId,
+//           filename: res.data.filename,
+//         });
+//       })
+//       .catch((error) => {
+//         onFileComplete({
+//           index,
+//           status: "failure",
+//           error: error.message,
+//         });
+//       });
 
-    promises.push(uploadPromise);
-  });
+//     promises.push(uploadPromise);
+//   });
 
-  return { controllers, promises };
-}
+//   return { controllers, promises };
+// }
 
-/**
- * 업로드가 완료된 임시 파일들 ID를 서버에 보내 최종 폴더로 옮기기
- */
-export async function confirmUploads(sessionId, fileIds) {
-  const formData = new FormData();
-  formData.append("session_id", sessionId);
-  fileIds.forEach((id) => formData.append("file_ids", id)); // 또는 JSON.stringify(fileIds) 사용
-  return axios.post("/api/uploads/commit-uploads", formData, {
-    headers: { "Content-Type": "multipart/form-data" }
-  });
-}
+// /**
+//  * 업로드가 완료된 임시 파일들 ID를 서버에 보내 최종 폴더로 옮기기
+//  */
+// export async function confirmUploads(sessionId, fileIds) {
+//   const formData = new FormData();
+//   formData.append("session_id", sessionId);
+//   fileIds.forEach((id) => formData.append("file_ids", id)); // 또는 JSON.stringify(fileIds) 사용
+//   return axios.post("/api/uploads/commit-uploads", formData, {
+//     headers: { "Content-Type": "multipart/form-data" }
+//   });
+// }
 
-/**
- * 업로드 취소: 임시로 업로드된 파일 IDs 삭제 요청
- */
-export async function cancelUploads(sessionId) {
-  // session_id를 FormData로 보내거나, 쿼리 파라미터로 전달합니다.
-  const formData = new FormData();
-  formData.append("session_id", sessionId);
-  await axios.delete("/api/uploads/cancel-uploads", { data: formData });
-}
+// /**
+//  * 업로드 취소: 임시로 업로드된 파일 IDs 삭제 요청
+//  */
+// export async function cancelUploads(sessionId) {
+//   // session_id를 FormData로 보내거나, 쿼리 파라미터로 전달합니다.
+//   const formData = new FormData();
+//   formData.append("session_id", sessionId);
+//   await axios.delete("/api/uploads/cancel-uploads", { data: formData });
+// }
 
 
 /**

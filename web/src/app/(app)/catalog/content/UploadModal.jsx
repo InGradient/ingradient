@@ -12,7 +12,7 @@ import {
 } from "@/components/molecules/Dialog";
 
 // 업로드 관련 유틸 함수들 (AbortController, 진행률, 커밋/취소 API 포함)
-import { uploadFiles, confirmUploads, cancelUploads } from "@/utils/fileHandler";
+import { uploadFiles, confirmUploads, cancelUploads } from "@/lib/api"
 
 const ProgressContainer = styled.div`
   margin-top: 16px;
@@ -39,6 +39,19 @@ const UploadModal = ({ saveImage, selectedDatasetIds, onClose}) => {
   const [uploadList, setUploadList] = useState([]); 
   const [controllers, setControllers] = useState([]); 
 
+  // file -> { width, height }를 Promise로 리턴
+  function readImageDimensions(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        resolve({ width: img.width, height: img.height });
+        URL.revokeObjectURL(img.src);  // 메모리 정리
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
   // 전체 진행률 계산 (완료된 파일 수 기준)
   const overallProgress = useMemo(() => {
     if (uploadList.length === 0) return 0;
@@ -58,27 +71,37 @@ const UploadModal = ({ saveImage, selectedDatasetIds, onClose}) => {
   // 전체 업로드가 끝났는지 여부
   const isUploadComplete = overallProgress === 100;
 
-  const onFilesDrop = (droppedFiles) => {
-    // 1) 우선 "idle" 상태로 uploadList에 넣어줌
+  const onFilesDrop = async (droppedFiles) => {
     const startIndex = uploadList.length;
-    const initialList = droppedFiles.map((file) => ({
-      status: "idle",
-      filename: file.name,
-      originalFile: file,
-      progress: 0,
-    }));
+
+    // 각 파일에 대해 width, height를 읽어들인다.
+    const newFilePromises = droppedFiles.map(async (file) => {
+      const { width, height } = await readImageDimensions(file);
+      return {
+        status: "idle",
+        filename: file.name,
+        originalFile: file,
+        progress: 0,
+        size: file.size,
+        type: file.type,
+        width,
+        height,
+      };
+    });
+
+    // Promise.all로 모든 파일의 width/height를 구한 뒤, uploadList에 저장
+    const initialList = await Promise.all(newFilePromises);
     setUploadList((prev) => [...prev, ...initialList]);
 
-    // 2) 업로드 실행
-    const { controllers: newControllers, promises } = uploadFiles(
+    // 이후 uploadFiles로 업로드 진행
+    const { controllers: newControllers } = uploadFiles(
       droppedFiles,
       sessionId,
+      // onProgress
       (progressInfo) => {
-        // progressInfo: { index, progress }
-        // index는 droppedFiles 배열 기준의 인덱스
         setUploadList((prev) =>
           prev.map((item, i) => {
-            const realIndex = startIndex + progressInfo.index; 
+            const realIndex = startIndex + progressInfo.index;
             if (i === realIndex) {
               return { ...item, progress: progressInfo.progress };
             }
@@ -86,9 +109,8 @@ const UploadModal = ({ saveImage, selectedDatasetIds, onClose}) => {
           })
         );
       },
-      // onFileComplete: 파일 업로드가 완료되는 즉시 상태 업데이트
+      // onFileComplete
       (fileResult) => {
-        // fileResult: { index, status, fileId?, error? }
         setUploadList((prev) =>
           prev.map((item, i) => {
             const realIndex = startIndex + fileResult.index;
@@ -106,15 +128,8 @@ const UploadModal = ({ saveImage, selectedDatasetIds, onClose}) => {
       }
     );
 
-    // 3) AbortController들 저장
     setControllers((prev) => [...prev, ...newControllers]);
-
-    // Promise.all(promises).then(() => {
-    //   console.log("모든 파일 업로드 완료!");
-    //   // 필요 시 어떤 로직
-    // });
   };
-
 
   // Cancel 버튼 클릭 시 처리: 진행중인 요청 중단 및 서버의 임시 파일 삭제
   const handleCancel = async () => {
@@ -145,24 +160,33 @@ const UploadModal = ({ saveImage, selectedDatasetIds, onClose}) => {
     const successFileIds = uploadList
       .filter((f) => f.status === "success" && f.fileId)
       .map((f) => f.fileId);
-  
+    
     if (successFileIds.length === 0) {
       onClose();
       return;
     }
   
     try {
-      // confirmUploads는 movedFiles 배열을 반환한다고 가정합니다.
+      // 서버 최종 커밋
       const response = await confirmUploads(sessionId, successFileIds);
-      const movedFiles = response.data.movedFiles;
-      console.log("MovedFiles", movedFiles)
+      const movedFiles = response.data.movedFiles; 
+      // movedFiles = [ { fileId, filename, finalPath, ... }, ... ]
       
-      // 각 파일에 대해 추가 정보를 붙여서 saveImage 호출
       for (const file of movedFiles) {
+        // uploadList에서 localFileItem 찾기
+        
+        const localFileItem = uploadList.find(
+          (item) => item.fileId === file.id
+        );
+  
         await saveImage({
           ...file,
           datasetIds: selectedDatasetIds,
           userId: "user1",
+          size: localFileItem?.size,
+          type: localFileItem?.type,
+          width: localFileItem?.width,
+          height: localFileItem?.height,
         });
       }
     } catch (err) {
@@ -172,8 +196,8 @@ const UploadModal = ({ saveImage, selectedDatasetIds, onClose}) => {
     setUploadList([]);
     setControllers([]);
     onClose();
-  };  
-
+  };
+  
   return (
     <>
       <ModalOverlay onClick={handleCancel} />

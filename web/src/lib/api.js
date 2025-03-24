@@ -150,17 +150,101 @@ export async function deleteImage(imageId, selectedDatasetIds = []) {
   return res.data;
 }
 
-export async function uploadFile(file) {
-  const formData = new FormData();
-  formData.append('file', file);
 
-  const res = await axios.post(`/api/upload-file`, formData);
-  return res.data;
+/**
+ * =========================
+ *  4) Upload APIs
+ * =========================
+ */
+
+// (선택) 단일 파일 업로드
+// export async function uploadFile(file) {
+//   const formData = new FormData();
+//   formData.append("file", file);
+
+//   // 예: /api/upload-file 엔드포인트
+//   const res = await axios.post(`/api/upload-file`, formData);
+//   return res.data;
+// }
+
+/**
+ * 여러 파일(droppedFiles)을 임시 업로드 (upload-temp)
+ * - sessionId: 업로드 세션 식별자
+ * - onProgress, onFileComplete 콜백으로 진행도 / 개별 완료 상태 전달
+ */
+export function uploadFiles(droppedFiles, sessionId, onProgress, onFileComplete) {
+  const controllers = [];
+  const promises = [];
+
+  droppedFiles.forEach((file, index) => {
+    const controller = new AbortController();
+    controllers.push(controller);
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("session_id", sessionId);
+
+    const uploadPromise = axios.post("/api/uploads/upload-temp", formData, {
+      signal: controller.signal,
+      onUploadProgress: (evt) => {
+        if (evt.total) {
+          const progress = (evt.loaded / evt.total) * 100;
+          // 진행도 콜백
+          onProgress({ index, progress });
+        }
+      },
+    })
+      .then((res) => {
+        console.log("res", res)
+        // 개별 파일 업로드 완료 시
+        onFileComplete({
+          index,
+          status: "success",
+          fileId: res.data.fileId,  // 서버 응답 구조에 맞춰 조정
+          filename: res.data.filename,
+        });
+      })
+      .catch((error) => {
+        onFileComplete({
+          index,
+          status: "failure",
+          error: error.message,
+        });
+      });
+
+    promises.push(uploadPromise);
+  });
+
+  return { controllers, promises };
+}
+
+/**
+ * 업로드 완료된 임시 파일들 ID를 서버에 보내 최종 폴더로 옮기기
+ */
+export async function confirmUploads(sessionId, fileIds) {
+  const formData = new FormData();
+  formData.append("session_id", sessionId);
+  fileIds.forEach((id) => formData.append("file_ids", id));
+
+  return axios.post("/api/uploads/commit-uploads", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+}
+
+/**
+ * 업로드 취소: 임시로 업로드된 파일 IDs 삭제 요청
+ */
+export async function cancelUploads(sessionId) {
+  const formData = new FormData();
+  formData.append("session_id", sessionId);
+
+  // DELETE 메서드로 FormData 전송하려면, axios.delete에 { data: formData } 사용
+  return axios.delete("/api/uploads/cancel-uploads", { data: formData });
 }
 
 /**
  * =========================
- *  4) Labels CRUD
+ *  5) Labels CRUD
  * =========================
  */
 export async function listLabels(imageId) {

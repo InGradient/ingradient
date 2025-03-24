@@ -37,7 +37,9 @@ def list_images(dataset_ids: Optional[List[str]] = Query(None), db: Session = De
             "comment": img.comment,
             "classIds": [cls.id for cls in img.classes],
             "properties": img.properties,
-            "model": img.extracted_features 
+            "model": img.extracted_features,
+            "uploadAt": img.upload_at,
+            "updatedAt": img.updated_at,
         })
     
     return results
@@ -64,6 +66,7 @@ def get_image(image_id: str, db: Session = Depends(get_db)):
 
 @router.post("/{image_id}")
 def upsert_image(image_id: str, updated_data: dict = Body(...), db: Session = Depends(get_db)):
+    print("updated_data", updated_data)
     updated_data = {to_snake_case(k): v for k, v in updated_data.items()}
 
     new_dataset_ids = updated_data.pop("dataset_ids", None)

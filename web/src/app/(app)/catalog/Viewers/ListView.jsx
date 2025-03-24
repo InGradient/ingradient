@@ -82,6 +82,8 @@ const StatusTag = styled.span`
 `;
 
 const ListView = ({ images, classes, setSelectedImageIds, selectedImageIds }) => {
+  const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL;
+
   const [tooltip, setTooltip] = useState({
     visible: false,
     x: 0,
@@ -121,7 +123,9 @@ const ListView = ({ images, classes, setSelectedImageIds, selectedImageIds }) =>
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  });  
+  });
+
+  // console.log("Images", images)
 
   return (
     <TableContainer>
@@ -142,7 +146,7 @@ const ListView = ({ images, classes, setSelectedImageIds, selectedImageIds }) =>
             <tr
               key={image.id}
               onClick={() => handleRowClick(image.id)}
-              onMouseMove={(e) => showTooltip(e, image.imageURL)}
+              onMouseMove={(e) => showTooltip(e, image.thumbnailLocation)}
               onMouseLeave={hideTooltip}
               style={{
                 backgroundColor: selectedImageIds.includes(image.id)
@@ -177,7 +181,7 @@ const ListView = ({ images, classes, setSelectedImageIds, selectedImageIds }) =>
                     </Chip>
                   ))}
               </td>
-              <td>{dateFormatter.format(new Date(image.uploadedAt))}</td>
+              <td>{dateFormatter.format(new Date(image.uploadAt))}</td>
               <td>{dateFormatter.format(new Date(image.updatedAt))}</td>
             </tr>
           ))}
@@ -186,7 +190,15 @@ const ListView = ({ images, classes, setSelectedImageIds, selectedImageIds }) =>
       {tooltip.visible &&
         ReactDOM.createPortal(
           <Tooltip style={{ top: tooltip.y, left: tooltip.x }}>
-            <img src={tooltip.imagePath} alt="Thumbnail" />
+            <img
+              src={
+                tooltip.imagePath
+                  ? `${SERVER_BASE_URL}/${tooltip.imagePath}`
+                  : tooltip.imagePath
+              }
+              alt="Thumbnail" 
+            />
+
           </Tooltip>,
           document.body
         )}
