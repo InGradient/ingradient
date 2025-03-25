@@ -34,8 +34,13 @@ function createWindow() {
         },
     });
 
-    // 프론트엔드 개발 서버가 http://localhost:3000 에서 실행되고 있다고 가정
-    mainWindow.loadURL("http://localhost:3000");
+    if (process.env.NODE_ENV === "production") {
+        // 프로덕션: 정적 빌드 파일 로드
+        mainWindow.loadFile(path.join(__dirname, "..", "web", "out", "index.html"));
+    } else {
+        // 개발: Next.js 개발 서버 URL 사용
+        mainWindow.loadURL("http://localhost:3000");
+    }
 
     mainWindow.on("closed", () => {
         // 창이 닫힐 때 uvicorn 프로세스 종료
