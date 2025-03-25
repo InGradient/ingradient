@@ -1,8 +1,27 @@
 const { app, BrowserWindow, autoUpdater, dialog } = require("electron");
+const { spawn } = require("child_process");
 const path = require("path");
 
-const server = "https://update.electronjs.org"; 
-const feed = `${server}/ingradient/ingradient/${process.platform}-${process.arch}/${app.getVersion()}`;
+let uvicornProcess;
+
+function startUvicorn() {
+    uvicornProcess = spawn('uvicorn', ['server.main:app', '--host', '0.0.0.0', '--port', '8000'], {
+        shell: true,
+        // 필요에 따라 cwd(working directory) 지정 가능
+    });
+
+    uvicornProcess.stdout.on('data', (data) => {
+        console.log(`uvicorn: ${data}`);
+    });
+    
+    uvicornProcess.stderr.on('data', (data) => {
+        console.error(`uvicorn error: ${data}`);
+    });
+    
+    uvicornProcess.on('close', (code) => {
+        console.log(`uvicorn process exited with code ${code}`);
+    });
+}
 
 function createWindow() {
     const mainWindow = new BrowserWindow({
@@ -15,20 +34,26 @@ function createWindow() {
         },
     });
 
-    const webAppPath = "http://localhost:3000"; // Next.js 서버가 실행되는 경로
-    mainWindow.loadURL(webAppPath);
+    // 프론트엔드 개발 서버가 http://localhost:3000 에서 실행되고 있다고 가정
+    mainWindow.loadURL("http://localhost:3000");
 
     mainWindow.on("closed", () => {
-        mainWindow = null;
+        // 창이 닫힐 때 uvicorn 프로세스 종료
+        if (uvicornProcess) {
+            uvicornProcess.kill();
+        }
     });
 
     return mainWindow;
 }
 
 app.whenReady().then(() => {
+    // 백엔드 서버 시작
+    startUvicorn();
+    
     const mainWindow = createWindow();
 
-    // 자동 업데이트 확인 (5초 후 실행)
+    // 자동 업데이트 확인 (예시)
     setTimeout(() => {
         checkForUpdates(mainWindow);
     }, 5000);
@@ -42,8 +67,7 @@ app.on("window-all-closed", () => {
     if (process.platform !== "darwin") app.quit();
 });
 
-// 🔹 자동 업데이트 설정
-autoUpdater.setFeedURL({ url: feed });
+autoUpdater.setFeedURL({ url: "https://update.electronjs.org/ingradient/ingradient/" + `${process.platform}-${process.arch}/${app.getVersion()}` });
 
 function checkForUpdates(mainWindow) {
     autoUpdater.checkForUpdates();

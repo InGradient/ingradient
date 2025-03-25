@@ -11,3 +11,4 @@
 *.egg-info
 ingradient.db
 *.ipynb
+server/uploads/

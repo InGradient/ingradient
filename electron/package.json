@@ -4,7 +4,7 @@
   "description": "Ingradient Desktop App",
   "author": {
     "name": "June Lee",
-    "email": "info@ingradient"
+    "email": "june@ingradient"
   },
   "main": "main.js",
   "scripts": {
