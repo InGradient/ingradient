@@ -24,4 +24,4 @@ dependencies = [
 "Homepage" = "https://github.com/ingradient/ingradient"
 
 [project.scripts]
-ingradient = "ingradient.cli:main"
+ingradient = "ingradient_sdk.cli:main"

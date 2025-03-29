@@ -1,6 +1,6 @@
-/__pycache__/
-/api/__pycache__/
-/core/__pycache__/
-/db/__pycache__/
-/utils/__pycache__/
-
+__pycache__/
+api/__pycache__/
+core/__pycache__/
+db/__pycache__/
+utils/__pycache__/
+uploads/
