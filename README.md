@@ -64,8 +64,22 @@ pip install ingradient
 Alternatively, for local development:
 
 ```bash
+# 1. Navigate to the frontend directory
+cd web
+
+# 2. Install dependencies (first time only)
+npm install
+
+# 3. Build the frontend
+npm run build
+
+# 4. Go back to the root and install the Python package in editable mode
+cd ..
 pip install -e .
 ```
+> ⚠️ **Why?**  
+> Ingradient's frontend is built using Next.js and exported as a static site. The `npm run build` command generates these static files and places them inside `ingradient_sdk/static`, which the Python backend serves.  
+> Without this step, the UI will not be accessible from the browser.
 
 ---
 

@@ -1,1 +1,1 @@
-recursive-include web *
+recursive-include ingradient_sdk/static *

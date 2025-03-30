@@ -7,7 +7,7 @@ from datetime import datetime
 from server.core.config import MODEL_UPLOAD_DIR, DATABASE_URL
 from tqdm import tqdm
 
-engine = create_engine(DATABASE_URL, echo=True)
+engine = create_engine(DATABASE_URL, echo=False)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -70,8 +70,7 @@ def insert_default_model():
     db.commit()
     db.refresh(new_model)
     db.close()
-    print("Default model inserted into database.")
-
+    
 
 def init_db():
     """

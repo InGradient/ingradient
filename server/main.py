@@ -43,6 +43,12 @@ def create_app() -> FastAPI:
 
     app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
+
+    import os
+    static_dir = os.path.join(os.path.dirname(__file__), "..", "ingradient_sdk", "static")
+    if os.path.exists(static_dir):
+        app.mount("/", StaticFiles(directory=static_dir, html=True), name="frontend")
+
     @app.get("/ping")
     def ping():
         return {"message": "pong"}
