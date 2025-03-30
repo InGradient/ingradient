@@ -30,7 +30,7 @@ class User(Base):
         "Project",
         secondary="project_users",
         back_populates="users",
-        overlaps="project_users,user,projects"  # added overlaps here
+        overlaps="project_users"
     )
 
 
@@ -46,7 +46,7 @@ class Project(Base):
         "User",
         secondary="project_users",
         back_populates="projects",
-        overlaps="project_users,users,projects"  # added overlaps here
+        overlaps="project_users"
     )
     datasets = relationship("Dataset", secondary=project_datasets, back_populates="projects")
 
@@ -57,8 +57,8 @@ class ProjectUser(Base):
     user_id = Column(String, ForeignKey("users.id"), primary_key=True)
     role = Column(Enum(RoleEnum), default=RoleEnum.viewer, nullable=False)
 
-    project = relationship("Project", back_populates="project_users", overlaps="users,project_users")
-    user = relationship("User", back_populates="project_users", overlaps="projects,project_users")
+    project = relationship("Project", back_populates="project_users", overlaps="users")
+    user = relationship("User", back_populates="project_users", overlaps="projects")
 
 
 class Dataset(Base):

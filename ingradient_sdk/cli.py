@@ -2,35 +2,81 @@ import os
 import time
 import click
 import subprocess
-from fastapi.staticfiles import StaticFiles
+import webbrowser
 
 @click.command()
-@click.option("--server-host", default="127.0.0.1", help="FastAPI 서버 호스트")
-@click.option("--server-port", default="8000", help="FastAPI 서버 포트")
-@click.option("--server-reload", is_flag=True, default=False, help="서버 자동 리로드 사용")
-def main(server_host, server_port, server_reload):
+@click.option("--server-host", default="127.0.0.1", help="Host address for the FastAPI server")
+@click.option("--server-port", default="8000", help="Port for the FastAPI server")
+@click.option("--frontend-port", default="3000", help="Port for the Next.js frontend")
+@click.option("--server-reload", is_flag=True, default=False, help="Enable auto-reload for the server")
+@click.option("--dev", is_flag=True, default=False, help="Run the Next.js frontend in development mode (npm run dev)")
+def main(server_host, server_port, frontend_port, server_reload, dev):
     """
-    ingradient 명령어 하나로 FastAPI 서버와 Next.js 빌드된 정적 사이트를 실행합니다.
+    Launches the FastAPI backend and starts the Next.js frontend using a single 'ingradient' command.
+    Opens the default web browser to the Next.js frontend URL with a fancy welcome message.
     """
-    from ingradient.server.main import app
+    # --- Start FastAPI backend ---
+    from server.main import app
 
-    # 1. web/build 폴더 경로 설정
+    # If a built frontend exists in web/build, mount it into the FastAPI app (optional)
     web_build_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "web", "build")
     if os.path.exists(web_build_dir):
+        from fastapi.staticfiles import StaticFiles
         app.mount("/", StaticFiles(directory=web_build_dir, html=True), name="web")
 
-    # 2. FastAPI 서버 실행
+    # Prepare uvicorn command for the backend
     uvicorn_cmd = [
         "uvicorn",
-        "ingradient.server.main:app",
+        "server.main:app",
         "--host", server_host,
         "--port", str(server_port)
     ]
     if server_reload:
         uvicorn_cmd.append("--reload")
 
-    click.echo(f"FastAPI 서버와 Next.js 정적 사이트를 실행합니다. (URL: http://{server_host}:{server_port})")
-    subprocess.run(uvicorn_cmd)
+    click.echo("🚀 Starting FastAPI backend...")
+    backend_process = subprocess.Popen(uvicorn_cmd)
+
+    # --- Start Next.js frontend ---
+    web_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "web")
+    if dev:
+        frontend_cmd = ["npm", "run", "dev"]
+    else:
+        frontend_cmd = ["npm", "run", "start"]
+
+    click.echo("🌐 Starting Next.js frontend...")
+    frontend_process = subprocess.Popen(frontend_cmd, cwd=web_dir)
+
+    # Wait a few seconds to let the frontend start up
+    time.sleep(5)
+
+    # Open the default web browser to the Next.js frontend URL
+    web_url = f"http://127.0.0.1:{frontend_port}"
+    webbrowser.open(web_url)
+
+    fancy_message = f"""
+    ============================================================
+     Welcome to Inggradient!
+     
+     Your Next.js frontend is now running at:
+       {web_url}
+     
+     FastAPI backend is running on:
+       http://{server_host}:{server_port}
+     
+     Enjoy your experience!
+    ============================================================
+    """
+    click.echo(fancy_message)
+
+    # Wait for both processes to finish (or until interrupted)
+    try:
+        backend_process.wait()
+        frontend_process.wait()
+    except KeyboardInterrupt:
+        click.echo("Shutting down processes...")
+        backend_process.terminate()
+        frontend_process.terminate()
 
 if __name__ == "__main__":
     main()

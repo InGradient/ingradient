@@ -52,5 +52,4 @@ def create_app() -> FastAPI:
 app = create_app()
 
 if __name__ == "__main__":
-    # 개발용 로컬 실행
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
