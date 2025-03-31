@@ -33,8 +33,11 @@ dependencies = [
 ingradient = "ingradient_sdk.cli:main"
 
 [tool.setuptools]
-packages = ["ingradient_sdk", "server"]
+packages = "find:" 
 include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["ingradient_sdk*", "server*"]
 
 [tool.setuptools.package-data]
 "ingradient_sdk" = ["static/**/*"]
