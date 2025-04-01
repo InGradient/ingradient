@@ -4,7 +4,7 @@ ingradient-*/
 venv/
 build/
 dist/
-uploads/
+static/
 .tmp/
 *.egg-info
 ingradient.db

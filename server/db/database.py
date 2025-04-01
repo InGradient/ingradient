@@ -51,25 +51,25 @@ def insert_default_model():
             else:
                 print("✅ Default model downloaded successfully.")
 
+            new_model = AIModel(
+                id=str(uuid.uuid4()),
+                name="DinoV2",
+                file_location=default_file,
+                input_width=224,
+                input_height=224,
+                purpose="feature_extract",
+                uploaded_at=datetime.utcnow()
+            )
+            db.add(new_model)
+            db.commit()
+            db.refresh(new_model)
+            db.close()
+            
         except Exception as e:
             print("❌ Error downloading default model:", e)
             db.close()
             return
 
-
-    new_model = AIModel(
-        id=str(uuid.uuid4()),
-        name="DinoV2",
-        file_location=default_file,
-        input_width=224,
-        input_height=224,
-        purpose="feature_extract",
-        uploaded_at=datetime.utcnow()
-    )
-    db.add(new_model)
-    db.commit()
-    db.refresh(new_model)
-    db.close()
     
 
 def init_db():

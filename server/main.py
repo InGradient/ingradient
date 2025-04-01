@@ -36,7 +36,7 @@ def create_app() -> FastAPI:
     app.include_router(labels_router, prefix="/api/labels", tags=["labels"]) 
     app.include_router(uploads_router, prefix="/api/uploads", tags=["uploads"])
     app.include_router(model_router, prefix="/api/model", tags=["model"])
-    app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+    app.mount("/static", StaticFiles(directory=UPLOAD_DIR), name="static")
 
     # 먼저 /ping 라우트 등록
     @app.get("/ping")
@@ -46,7 +46,7 @@ def create_app() -> FastAPI:
     # 그 후에 정적 파일을 루트 경로에 마운트
     static_dir = os.path.join(os.path.dirname(__file__), "..", "ingradient_sdk", "static")
     if os.path.exists(static_dir):
-        app.mount("/", StaticFiles(directory=static_dir, html=True), name="frontend")
+        app.mount("/", StaticFiles(directory=static_dir, html=True), name="app")
     
     return app
 

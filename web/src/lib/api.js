@@ -307,7 +307,7 @@ export async function uploadModel(modelFile, modelName, inputWidth, inputHeight,
 // purpose 값이 주어지면 해당 목적에 맞는 모델만 반환, 아니면 전체 모델 반환
 export async function listModels(purpose = "") {
   try {
-    const res = await axios.get(`/api/model/list/`, {
+    const res = await axios.get(`/api/model/list`, {
       params: { purpose }
     });
     return res.data;
@@ -326,7 +326,7 @@ export async function extractFeatures(modelId, imageId) {
   formData.append("image_id", imageId);
 
   try {
-    const res = await axios.post(`/api/model/extract_features/`, formData, {
+    const res = await axios.post(`/api/model/extract_features`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },

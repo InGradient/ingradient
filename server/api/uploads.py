@@ -11,7 +11,7 @@ from server.utils.string_utils import to_camel_case
 router = APIRouter()
 
 @router.post("/upload-file")
-async def upload_file(file: UploadFile = File(...), upload_folder: str = Form("uploads")):
+async def upload_file(file: UploadFile = File(...)):
     file_id = str(uuid.uuid4()).replace("-", "")
     fname = f"{file_id}_{file.filename}"
 
@@ -24,11 +24,9 @@ async def upload_file(file: UploadFile = File(...), upload_folder: str = Form("u
     file_location = os.path.join(folder_path, fname)
     thumbnail_location = os.path.join(thumbnail_folder, fname)
 
-    # 파일 저장
     with open(file_location, "wb") as f:
         shutil.copyfileobj(file.file, f)
     
-    # 썸네일 생성
     thumbnail_location = create_thumbnail(file_location, thumbnail_location)
 
     response = {

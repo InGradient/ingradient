@@ -2,7 +2,7 @@
 import os
 
 DATABASE_URL = "sqlite:///./ingradient.db"
-UPLOAD_DIR = "./uploads"
+UPLOAD_DIR = "./static"
 MODEL_UPLOAD_DIR = os.path.join(UPLOAD_DIR, 'models')
 TMP_FOLDER = "./.tmp"
 
