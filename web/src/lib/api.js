@@ -186,7 +186,7 @@ export function uploadFiles(droppedFiles, sessionId, onProgress, onFileComplete)
     formData.append("file", file);
     formData.append("session_id", sessionId);
 
-    const uploadPromise = axios.post("/api/uploads/upload-temp/", formData, {
+    const uploadPromise = axios.post("/api/uploads/upload-temp", formData, {
       signal: controller.signal,
       onUploadProgress: (evt) => {
         if (evt.total) {
@@ -228,7 +228,7 @@ export async function confirmUploads(sessionId, fileIds) {
   formData.append("session_id", sessionId);
   fileIds.forEach((id) => formData.append("file_ids", id));
 
-  return axios.post("/api/uploads/commit-uploads/", formData, {
+  return axios.post("/api/uploads/commit-uploads", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
 }
@@ -241,7 +241,7 @@ export async function cancelUploads(sessionId) {
   formData.append("session_id", sessionId);
 
   // DELETE 메서드로 FormData 전송하려면, axios.delete에 { data: formData } 사용
-  return axios.delete("/api/uploads/cancel-uploads/", { data: formData });
+  return axios.delete("/api/uploads/cancel-uploads", { data: formData });
 }
 
 /**
