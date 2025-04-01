@@ -5,6 +5,7 @@ import {
   faChevronRight
 } from "@fortawesome/free-solid-svg-icons";
 import styled from "styled-components";
+import { getServerBaseUrl } from "config/environment";
 
 const PanelWrapper = styled.div`
   position: absolute;
@@ -66,7 +67,7 @@ const Filename = styled.div`
 const SelectionPanel = ({ selectedPoints, hoveredPoint }) => {
   const [collapsed, setCollapsed] = useState(false);
 
-  const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL;
+  const SERVER_BASE_URL = getServerBaseUrl();
 
   if (!selectedPoints || selectedPoints.length === 0) return null;
 
