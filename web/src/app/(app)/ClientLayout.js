@@ -1,7 +1,7 @@
 "use client";
 
 // import { DataProvider } from "@/contexts/DataProvider";
-import { Sidebar } from "components/organisms/Sidebar";
+import { Sidebar } from "@/app/(app)/Sidebar";
 import styled from "styled-components";
 import { useState, useEffect } from "react";
 
