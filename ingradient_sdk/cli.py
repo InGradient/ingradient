@@ -1,44 +1,66 @@
 import os
+import sys
 import time
 import click
 import platform
 import subprocess
 import webbrowser
 import logging
-from fastapi.staticfiles import StaticFiles
+import requests
+
+def wait_for_server(host: str, port: str, timeout: float = 30.0):
+    """
+    Polls the /ping endpoint until the server responds, showing a spinner in the terminal.
+    Only the spinner character is displayed in cyan.
+    """
+    url = f"http://{host}:{port}/ping"
+    spinner_chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    start_time = time.time()
+    idx = 0
+
+    # Print initial message
+    sys.stdout.write("⏳ Server is starting... ")
+    sys.stdout.flush()
+
+    while (time.time() - start_time) < timeout:
+        spinner = spinner_chars[idx % len(spinner_chars)]
+        # \033[36m : set text color to cyan, \033[0m : reset
+        sys.stdout.write(f"\r\033[36m{spinner}\033[0m Server is starting... ")
+        sys.stdout.flush()
+        idx += 1
+
+        try:
+            r = requests.get(url, timeout=0.2)
+            if r.status_code == 200:
+                sys.stdout.write("\r✅ Server is ready!           \n")
+                sys.stdout.flush()
+                return True
+        except requests.exceptions.RequestException:
+            pass
+
+        time.sleep(0.1)
+
+    sys.stdout.write("\r❌ Server did not respond in time.\n")
+    sys.stdout.flush()
+    return False
 
 @click.command()
-@click.option("--server-host", default="127.0.0.1", help="Host address for the FastAPI server")
-@click.option("--server-port", default="8000", help="Port for the FastAPI server")
-@click.option("--frontend-port", default="3000", help="Port for the Next.js frontend (only for dev mode)")
+@click.option("--host", default="127.0.0.1", help="Host address for the FastAPI server")
+@click.option("--port", default="8000", help="Port for the FastAPI server")
+@click.option("--frontend-port", default="3000", help="Port for Next.js frontend dev mode")
 @click.option("--server-reload", is_flag=True, default=False, help="Enable auto-reload for the server")
-@click.option("--dev", is_flag=True, default=False, help="Run the Next.js frontend in development mode (npm run dev)")
-def main(server_host, server_port, frontend_port, server_reload, dev):
+@click.option("--dev", is_flag=True, default=False, help="Run the Next.js frontend in development mode")
+def main(host, port, frontend_port, server_reload, dev):
     """
     Launches the FastAPI backend and optionally the Next.js frontend using a single 'ingradient' command.
     """
+
     logging.getLogger("sqlalchemy.engine").setLevel(logging.ERROR)
-
-    from server.main import app
-
-    # --- Mount static frontend if it exists ---
-    static_dir = os.path.join(os.path.dirname(__file__), "static")
-    web_build_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "web", "build")
-    use_static = False
-
-    if os.path.exists(static_dir):
-        app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
-        use_static = True
-    elif os.path.exists(web_build_dir):
-        app.mount("/", StaticFiles(directory=web_build_dir, html=True), name="web")
-        use_static = True
-
-    # --- Prepare and start the FastAPI backend ---
     uvicorn_cmd = [
         "uvicorn",
         "server.main:app",
-        "--host", server_host,
-        "--port", str(server_port),
+        "--host", host,
+        "--port", str(port),
         "--log-level", "error",
     ]
     if server_reload:
@@ -47,9 +69,13 @@ def main(server_host, server_port, frontend_port, server_reload, dev):
     click.echo("🚀 Starting FastAPI backend...")
     backend_process = subprocess.Popen(uvicorn_cmd)
 
-    time.sleep(2)
+    # 서버 준비될 때까지 /ping 폴링
+    if not wait_for_server(host, port, timeout=120.0):
+        click.echo("❌ Failed to start server properly. Terminating...")
+        backend_process.terminate()
+        return
 
-    # --- Handle frontend process based on mode ---
+    # Next.js dev 모드
     frontend_process = None
     if dev:
         web_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "web")
@@ -59,23 +85,21 @@ def main(server_host, server_port, frontend_port, server_reload, dev):
         frontend_process = subprocess.Popen(frontend_cmd, cwd=web_dir)
         time.sleep(3)
         web_url = f"http://127.0.0.1:{frontend_port}"
-    elif use_static:
-        web_url = f"http://{server_host}:{server_port}"
     else:
-        click.echo("❌ No static frontend build found. Run `next build && next export` to generate one.")
-        backend_process.terminate()
-        return
+        # 프로덕션 (정적 빌드가 server/main.py에 있음)
+        web_url = f"http://{host}:{port}"
 
+    click.echo("🌐 Opening browser...")
     webbrowser.open(web_url)
 
     welcome_message = f"""
-    ============================================================
+    =============================================================================
     ██╗███╗   ██╗ ██████╗ ██████╗  █████╗ ███████╗ ██╗███████╗███╗   ██╗████████╗
     ██║████╗  ██║██╔════╝ ██╔══██╗██╔══██╗██╔═══██╗██║██╔════╝████╗  ██║╚══██╔══╝
-    ██║██╔██╗ ██║██║  ███╗██████╔╝███████║██║   ██║██║█████╗  ██╔██╗ ██║   ██║   
-    ██║██║╚██╗██║██║   ██║██╔══██║██╔══██║██║   ██║██║██╔══╝  ██║╚██╗██║   ██║   
-    ██║██║ ╚████║╚██████╔╝██║  ██║██║  ██║███████╔╝██║███████╗██║ ╚████║   ██║   
-    ╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝ ╚═╝╚══════╝╚═╝  ╚═══╝   ╚═╝   
+    ██║██╔██╗ ██║██║  ███╗██████╔╝███████║██║   ██║██║█████╗  ██╔██╗ ██║   ██║
+    ██║██║╚██╗██║██║   ██║██╔══██╗██╔══██║██║   ██║██║██╔══╝  ██║╚██╗██║   ██║
+    ██║██║ ╚████║╚██████╔╝██║  ██║██║  ██║███████╔╝██║███████╗██║ ╚████║   ██║
+    ╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝ ╚═╝╚══════╝╚═╝  ╚═══╝   ╚═╝
 
     Welcome to Ingradient!
 
@@ -83,15 +107,14 @@ def main(server_host, server_port, frontend_port, server_reload, dev):
     {web_url}
 
     Backend is running on:
-    http://{server_host}:{server_port}
+    http://{host}:{port}
 
     Enjoy your experience!
-    ============================================================
+    =============================================================================
     """
-
     click.echo(welcome_message)
 
-    # --- Wait for processes to finish ---
+    # 프로세스 종료까지 대기
     try:
         backend_process.wait()
         if frontend_process:

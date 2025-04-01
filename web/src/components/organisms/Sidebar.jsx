@@ -1,12 +1,8 @@
 "use client";
 
 import PropTypes from "prop-types";
-import React, { useState, useEffect } from "react";
+import React from "react";
 import styled from "styled-components";
-
-import { useRouter } from "next/navigation";
-import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebaseConfig";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {

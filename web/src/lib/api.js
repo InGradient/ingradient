@@ -1,6 +1,8 @@
 import axios from "axios";
 import qs from "qs"; 
 
+axios.defaults.baseURL = process.env.NEXT_PUBLIC_SERVER_BASE_URL || "http://localhost:8000";
+
 /**
  * =========================
  *  1) Dataset CRUD
@@ -9,14 +11,14 @@ import qs from "qs";
 
 // [GET] 모든 Dataset 목록
 export async function listDatasets() {
-  const res = await axios.get(`/api/datasets`);
+  const res = await axios.get(`/api/datasets/`);
   return res.data;
 }
 
 // [POST] 새로운 Dataset 생성
 // dataset: { id, name, description? }
 export async function createDataset(dataset) {
-  const res = await axios.post(`/api/datasets`, dataset);
+  const res = await axios.post(`/api/datasets/`, dataset);
   return res.data;
 }
 
@@ -52,14 +54,14 @@ export async function deleteDataset(datasetId) {
 
 // [GET] 모든 Class 목록
 export async function listClasses() {
-  const res = await axios.get(`/api/classes`);
+  const res = await axios.get(`/api/classes/`);
   return res.data;
 }
 
 // [POST] 새로운 Class 생성
 // cls: { id, name, color?, dataset_id? }
 export async function createClass(cls) {
-  const res = await axios.post(`/api/classes`, cls);
+  const res = await axios.post(`/api/classes/`, cls);
   return res.data;
 }
 
@@ -95,7 +97,7 @@ export async function deleteClass(classId) {
 
 // [GET] 모든 Image 목록
 export async function listImages(datasetIds = []) {
-  const res = await axios.get("/api/images", {
+  const res = await axios.get("/api/images/", {
     params: { dataset_ids: datasetIds },
     paramsSerializer: (params) => qs.stringify(params, { arrayFormat: "repeat" }), // ✅ 배열 직렬화
   });
@@ -117,7 +119,7 @@ export async function createImage(id, file, userId, datasetIds = []) {
   formData.append('dataset_ids', JSON.stringify(datasetIds)); // 배열은 JSON으로 변환
 
   try {
-    const res = await axios.post(`/api/images`, formData, {
+    const res = await axios.post(`/api/images/`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data' // ✅ FormData 전송
       }
@@ -184,7 +186,7 @@ export function uploadFiles(droppedFiles, sessionId, onProgress, onFileComplete)
     formData.append("file", file);
     formData.append("session_id", sessionId);
 
-    const uploadPromise = axios.post("/api/uploads/upload-temp", formData, {
+    const uploadPromise = axios.post("/api/uploads/upload-temp/", formData, {
       signal: controller.signal,
       onUploadProgress: (evt) => {
         if (evt.total) {
@@ -226,7 +228,7 @@ export async function confirmUploads(sessionId, fileIds) {
   formData.append("session_id", sessionId);
   fileIds.forEach((id) => formData.append("file_ids", id));
 
-  return axios.post("/api/uploads/commit-uploads", formData, {
+  return axios.post("/api/uploads/commit-uploads/", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
 }
@@ -239,7 +241,7 @@ export async function cancelUploads(sessionId) {
   formData.append("session_id", sessionId);
 
   // DELETE 메서드로 FormData 전송하려면, axios.delete에 { data: formData } 사용
-  return axios.delete("/api/uploads/cancel-uploads", { data: formData });
+  return axios.delete("/api/uploads/cancel-uploads/", { data: formData });
 }
 
 /**
@@ -250,7 +252,7 @@ export async function cancelUploads(sessionId) {
 export async function listLabels(imageId) {
   if (!imageId) return { boundingBoxes: [], keyPoints: [], segmentations: [] };
 
-  const res = await axios.get(`/api/labels`, {
+  const res = await axios.get(`/api/labels/`, {
     params: { image_id: imageId },
   });
 
@@ -259,7 +261,7 @@ export async function listLabels(imageId) {
 
 export async function saveLabels({ imageId, boundingBoxes = [], keyPoints = [], segmentations = [] }) {
   try {
-    const res = await axios.post(`/api/labels`, {
+    const res = await axios.post(`/api/labels/`, {
       imageId,
       boundingBoxes,
       keyPoints,
@@ -289,7 +291,7 @@ export async function uploadModel(modelFile, modelName, inputWidth, inputHeight,
   formData.append("purpose", purpose);  // 추가된 purpose 필드
 
   try {
-    const res = await axios.post(`/api/model/upload`, formData, {
+    const res = await axios.post(`/api/model/upload/`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -305,7 +307,7 @@ export async function uploadModel(modelFile, modelName, inputWidth, inputHeight,
 // purpose 값이 주어지면 해당 목적에 맞는 모델만 반환, 아니면 전체 모델 반환
 export async function listModels(purpose = "") {
   try {
-    const res = await axios.get(`/api/model/list`, {
+    const res = await axios.get(`/api/model/list/`, {
       params: { purpose }
     });
     return res.data;
@@ -324,7 +326,7 @@ export async function extractFeatures(modelId, imageId) {
   formData.append("image_id", imageId);
 
   try {
-    const res = await axios.post(`/api/model/extract_features`, formData, {
+    const res = await axios.post(`/api/model/extract_features/`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -346,7 +348,7 @@ export async function extractFeatures(modelId, imageId) {
  */
 export async function compressFeatures(imageIds, modelId, method = "umap") {
   try {
-    const res = await axios.get(`/api/model/compress_features`, {
+    const res = await axios.get(`/api/model/compress_features/`, {
       params: { 
         image_ids: imageIds,
         model_id: modelId,

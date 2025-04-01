@@ -2,9 +2,9 @@
 import os
 
 DATABASE_URL = "sqlite:///./ingradient.db"
-UPLOAD_DIR = "../uploads"
-MODEL_UPLOAD_DIR = 'uploads/models'
-TMP_FOLDER = "../.tmp"
+UPLOAD_DIR = "./uploads"
+MODEL_UPLOAD_DIR = os.path.join(UPLOAD_DIR, 'models')
+TMP_FOLDER = "./.tmp"
 
 # 폴더 자동 생성
 os.makedirs(UPLOAD_DIR, exist_ok=True)

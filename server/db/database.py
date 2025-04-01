@@ -26,7 +26,7 @@ def insert_default_model():
 
     dinov2_url = "https://huggingface.co/onnx-community/dinov2-small/resolve/main/onnx/model_uint8.onnx?download=true"
     
-    default_file = os.path.join("server/uploads/models", "model_uint8.onnx")
+    default_file = os.path.join(MODEL_UPLOAD_DIR, "model_uint8.onnx")
     
     if not os.path.exists(default_file):
         print("Default model file does not exist. Downloading:", default_file)

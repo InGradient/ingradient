@@ -8,7 +8,7 @@ const handle = app.getRequestHandler();
 
 // 환경 변수에서 HOST 가져오기 (기본: 127.0.0.1)
 const host = process.env.HOST || "127.0.0.1";
-const port = 9999;
+const port = 8000;
 
 app.prepare().then(() => {
   createServer((req, res) => {
