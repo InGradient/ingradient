@@ -371,7 +371,6 @@ export const useMyStore = create((set, get) => ({
    * ===================
    */
   saveImage: async (data) => {
-    console.log("Data for Save Image", data)
     const { id } = data;
   
     try {
@@ -386,7 +385,7 @@ export const useMyStore = create((set, get) => ({
       const currentModel = get().images[id]?.model || {};
       const mergedModel = {
         ...currentModel,
-        ...data.model, // 만약 data.model이 있다면 병합
+        ...data.model,
       };
   
       // 3) 서버에 보낼 이미지

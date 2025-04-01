@@ -12,3 +12,10 @@ export const getExecutionMode = () => {
   }
   return isOnline() ? "web-online" : "web-offline";
 };
+
+export const getServerBaseUrl = () => {
+  if (typeof window !== "undefined") {
+    return process.env.NEXT_PUBLIC_SERVER_BASE_URL || `${window.location.origin}`;
+  }
+  return process.env.NEXT_PUBLIC_SERVER_BASE_URL || "";
+};

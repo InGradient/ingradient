@@ -5,6 +5,7 @@ import styled from "styled-components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleNodes } from "@fortawesome/free-solid-svg-icons";
 import { DashedBox, RotateLeft, XMark } from "@/components/atoms/Icon";
+import { getServerBaseUrl } from "config/environment";
 
 const ZoomedImageOverlay = styled.div`
   position: fixed;
@@ -138,7 +139,7 @@ function ImageEditor({
   const keyPointsRef = useRef([]);
   const segmentationsRef = useRef([]);
 
-  const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL;
+  const SERVER_BASE_URL = getServerBaseUrl();
   
   const imageURL = image.fileLocation ? `${SERVER_BASE_URL}/${image.fileLocation}` : null;
 

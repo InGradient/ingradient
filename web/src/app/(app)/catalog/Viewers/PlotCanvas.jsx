@@ -12,6 +12,7 @@ import useLoadingStore from "@/state/loading";
 
 import { getMemoryUsage } from "@/utils/Optimizer";
 import { compressFeatures } from "@/lib/api";
+import { getServerBaseUrl } from "config/environment";
 
 import { listModels } from "@/lib/api";
 
@@ -36,7 +37,7 @@ export default function PlotCanvas({
     maxY: 1,
   });
   // const [loading, setLoading] = useState(true);
-  const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL;
+  const SERVER_BASE_URL = getServerBaseUrl();
 
   const { startLoading, stopLoading, setProgress, setLoadingStatus } = useLoadingStore();
 

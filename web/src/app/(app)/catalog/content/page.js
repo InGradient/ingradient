@@ -652,7 +652,7 @@ const ContentSection = ({
             {/* {console.log("🎯 Statics 렌더링됨")} */}
             <Statics 
               images={sortedData} 
-              classes={activeClasses}
+              classes={activeClasses.map((id) => classes[id]).filter(Boolean)}
               selectedImageIds={selectedImageIds}
               setSelectedImageIds={setSelectedImageIds}
             />

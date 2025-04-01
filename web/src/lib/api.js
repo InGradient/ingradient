@@ -191,13 +191,11 @@ export function uploadFiles(droppedFiles, sessionId, onProgress, onFileComplete)
       onUploadProgress: (evt) => {
         if (evt.total) {
           const progress = (evt.loaded / evt.total) * 100;
-          // 진행도 콜백
           onProgress({ index, progress });
         }
       },
     })
       .then((res) => {
-        console.log("res", res)
         // 개별 파일 업로드 완료 시
         onFileComplete({
           index,
@@ -348,7 +346,7 @@ export async function extractFeatures(modelId, imageId) {
  */
 export async function compressFeatures(imageIds, modelId, method = "umap") {
   try {
-    const res = await axios.get(`/api/model/compress_features/`, {
+    const res = await axios.get(`/api/model/compress_features`, {
       params: { 
         image_ids: imageIds,
         model_id: modelId,

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import ReactDOM from "react-dom";
 import styled from "styled-components";
 import Checkbox from "@/components/atoms/Checkbox";
+import { getServerBaseUrl } from "config/environment";
 
 const TableContainer = styled.div`
   width: 100%;
@@ -82,7 +83,7 @@ const StatusTag = styled.span`
 `;
 
 const ListView = ({ images, classes, setSelectedImageIds, selectedImageIds }) => {
-  const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL;
+  const SERVER_BASE_URL = getServerBaseUrl();
 
   const [tooltip, setTooltip] = useState({
     visible: false,

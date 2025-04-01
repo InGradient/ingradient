@@ -19,7 +19,7 @@ const Statics = ({ images, classes, selectedImageIds, setSelectedImageIds }) => 
 
     // 1. Class Distribution
     const classCounts = images.reduce((acc, image) => {
-      const classInfo = classIdToInfoMap[image.classId] || { name: "Unknown", color: "#CCCCCC" };
+      const classInfo = classIdToInfoMap[image.classIds] || { name: "Unknown", color: "#CCCCCC" };
       const { name, color } = classInfo;
 
       if (!acc[name]) {
@@ -30,6 +30,7 @@ const Statics = ({ images, classes, selectedImageIds, setSelectedImageIds }) => 
 
       return acc;
     }, {});
+
     const classLabels = Object.keys(classCounts);
     const classData = classLabels.map((label) => classCounts[label].count);
     const classColors = classLabels.map((label) => classCounts[label].color);

@@ -4,6 +4,7 @@ import styled from "styled-components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronDown, faChevronRight } from "@fortawesome/free-solid-svg-icons";
 import { Card } from "components/molecules/Card";
+import { getServerBaseUrl } from "config/environment";
 
 const Container = styled.div`
   position: relative;
@@ -50,7 +51,7 @@ const ArrowContainer = styled.div`
   cursor: pointer;
 `;
 
-const SERVER_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL;
+const SERVER_BASE_URL = getServerBaseUrl();
 
 const MemoizedImageItem = React.memo(
   function MemoizedImageItem({ item, isSelected, onClick, onDoubleClick }) {
