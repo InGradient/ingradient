@@ -466,7 +466,7 @@ export const useMyStore = create((set, get) => ({
           if (newDatasets[dsId]) {
             newDatasets[dsId] = {
               ...newDatasets[dsId],
-              imageIds: [...new Set([...newDatasets[dsId].imageIds, id])],
+              imageIds: [...new Set([...(newDatasets[dsId].imageIds || []), id])],
             };
           }
         });
@@ -694,7 +694,7 @@ export const useMyStore = create((set, get) => ({
 
   saveLabels: async ({ imageId, boundingBoxes = [], keyPoints = [], segmentations = [] }) => {
     try {
-      console.log("Saving Labels:", imageId, boundingBoxes);
+      // console.log("Saving Labels:", imageId, boundingBoxes);
       const response = await apiSaveLabels({
         imageId,
         boundingBoxes,
@@ -715,7 +715,7 @@ export const useMyStore = create((set, get) => ({
         },
       }));
   
-      console.log(`✅ Labels saved successfully for image ${imageId}`);
+      // console.log(`✅ Labels saved successfully for image ${imageId}`);
     } catch (error) {
       console.error(`❌ Error saving labels for image ${imageId}:`, error);
     }

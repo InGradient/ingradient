@@ -182,6 +182,7 @@ export async function handleDownload(sortedData, activeClasses) {
   const zip = new JSZip();
 
   sortedData.forEach((image) => {
+    console.log("image to download", image)
     const annotation = {
       image: {
         identifier: image.filename,
@@ -204,7 +205,7 @@ export async function handleDownload(sortedData, activeClasses) {
           id: box.id || uuidv4(),
         };
       }),
-      points: (image.points || []).map((pt) => {
+      keyPoints: (image.keyPoints || []).map((pt) => {
         const matchedClass = activeClasses.find((c) => c.id === pt.classId);
         const className = matchedClass ? matchedClass.name : pt.classId;
         return {

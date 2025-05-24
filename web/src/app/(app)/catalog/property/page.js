@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import styled from "styled-components";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { 
@@ -166,7 +166,7 @@ export default function PropertySection({
   selectedDatasetIds,
   selectedImageIds,
   classes,
-  activeClasses,
+  activeClassIds,
   saveClass,
   deleteClass,
   saveImage,
@@ -178,6 +178,8 @@ export default function PropertySection({
   
   // 서버에서 받아온 모델 목록 (예: "feature_extract" 용도만 필터링)
   const [models, setModels] = useState([]);
+
+  // console.log("Clicked Image Keypoints", images[lastClickedImage.id]);
 
   useEffect(() => {
     setDescription(lastClickedImage.properties?.description || "");
@@ -199,6 +201,64 @@ export default function PropertySection({
     }
     fetchModels();
   }, []);
+
+
+
+  // --- ✨ 키보드 이벤트 핸들러 추가 시작 ✨ ---
+  const handleKeyDown = useCallback((event) => {
+    // Description이나 Memo 입력 중에는 단축키가 작동하지 않도록 함
+    if (event.target.tagName === 'TEXTAREA' || event.target.tagName === 'INPUT') {
+      return;
+    }
+
+    // 눌린 키가 1부터 9 사이의 숫자인지 확인
+    if (event.key >= '1' && event.key <= '9') {
+      const keyNumber = parseInt(event.key, 10);
+      const classIndex = keyNumber - 1; // 0부터 시작하는 인덱스로 변환
+
+      // 유효한 클래스 인덱스인지 확인 (classes 배열 범위 내)
+      if (classIndex >= 0 && classIndex < activeClassIds.length) {
+        const targetClassId = activeClassIds[classIndex];
+
+        if (!targetClassId) return; // 혹시 모를 오류 방지
+
+        // 현재 선택된 모든 이미지에 대해 클래스 적용/해제 (토글 방식)
+        selectedImageIds.forEach((imageId) => {
+          const image = images[imageId];
+          if (!image) return; // 이미지가 없으면 건너뜀
+
+          // 이미지에 클래스 정보가 어떻게 저장되는지에 따라 로직 수정 필요
+          // 예시: image.classIds 배열에 클래스 ID를 저장한다고 가정
+          const currentClassIds = image.classIds || []; // 기존 클래스 ID 배열 가져오기 (없으면 빈 배열)
+          const classExists = currentClassIds.includes(targetClassId);
+
+          let newClassIds;
+          if (classExists) {
+            // 이미 클래스가 있으면 제거 (토글)
+            newClassIds = currentClassIds.filter(id => id !== targetClassId);
+          } else {
+            // 클래스가 없으면 추가 (토글)
+            // newClassIds = [...currentClassIds, targetClassId.id];
+            // --- 만약 단일 클래스만 허용한다면 아래처럼 수정 ---
+            newClassIds = [targetClassId];
+          }
+
+          // 변경된 이미지 정보 저장 (saveImage 함수가 classIds 업데이트를 처리한다고 가정)
+          saveImage({
+            ...image,
+            classIds: newClassIds, // 'classIds'는 실제 이미지 데이터 구조에 맞게 수정 필요
+          });
+        });
+      }
+    }
+  }, [classes, selectedImageIds, images, saveImage]); // 의존성 배열 추가
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
 
   const toggleButtonSelection = (button) => {
     setSelectedButton((prev) => (prev === button ? null : button));
@@ -386,7 +446,7 @@ export default function PropertySection({
             <TagManager
               classes={classes}
               saveImage={saveImage}
-              activeClasses={activeClasses}
+              activeClassIds={activeClassIds}
               saveClass={saveClass}
               deleteClass={deleteClass}
               selectedDatasetIds={selectedDatasetIds}

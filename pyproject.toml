@@ -30,7 +30,7 @@ dependencies = [
 "Homepage" = "https://github.com/ingradient/ingradient"
 
 [project.scripts]
-ingradient = "ingradient_sdk.cli:main"
+ingradient = "ingradient_sdk.cli.main:main"
 
 [tool.setuptools]
 include-package-data = true

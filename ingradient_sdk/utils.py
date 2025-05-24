@@ -4,21 +4,40 @@ import threading
 import itertools
 import sys
 
-def wait_for_server(url, timeout=30, interval=0.5):
+def wait_for_server(host: str, port: str, timeout: float = 30.0):
     """
-    주어진 url에 대해 서버가 제대로 응답(200)할 때까지 기다린다.
-    준비가 안 되면 일정 간격(interval)으로 재시도하며,
-    timeout이 지나면 False를 리턴한다.
+    Polls the /ping endpoint until the server responds, showing a spinner in the terminal.
+    Only the spinner character is displayed in cyan.
     """
-    start = time.time()
-    while time.time() - start < timeout:
+    url = f"http://{host}:{port}/ping"
+    spinner_chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    start_time = time.time()
+    idx = 0
+
+    # Print initial message
+    sys.stdout.write("⏳ Server is starting... ")
+    sys.stdout.flush()
+
+    while (time.time() - start_time) < timeout:
+        spinner = spinner_chars[idx % len(spinner_chars)]
+        # \033[36m : set text color to cyan, \033[0m : reset
+        sys.stdout.write(f"\r\033[36m{spinner}\033[0m Server is starting... ")
+        sys.stdout.flush()
+        idx += 1
+
         try:
-            r = requests.get(url)
+            r = requests.get(url, timeout=0.2)
             if r.status_code == 200:
+                sys.stdout.write("\r✅ Server is ready!           \n")
+                sys.stdout.flush()
                 return True
         except requests.exceptions.RequestException:
             pass
-        time.sleep(interval)
+
+        time.sleep(0.1)
+
+    sys.stdout.write("\r❌ Server did not respond in time.\n")
+    sys.stdout.flush()
     return False
 
 def start_spinner(spinner_message="Server is starting..."):

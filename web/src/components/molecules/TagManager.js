@@ -105,7 +105,7 @@ const generatePastelColor = () => {
 const TagManager = ({
   classes,
   saveImage,
-  activeClasses,
+  activeClassIds,
   saveClass,
   deleteClass,
   lastClickedImage,
@@ -144,10 +144,10 @@ const TagManager = ({
     return states;
   }, [selectedImages]);
 
-  // 컴포넌트가 처음 마운트되거나 activeClasses가 바뀔 때, 로컬 tags 상태를 초기화
+  // 컴포넌트가 처음 마운트되거나 activeClassIds가 바뀔 때, 로컬 tags 상태를 초기화
   useEffect(() => {
-    setTags(activeClasses);
-  }, [activeClasses]);
+    setTags(activeClassIds);
+  }, [activeClassIds]);
 
   // 태그 클릭 핸들러
   const handleTagClick = useCallback(
@@ -175,7 +175,7 @@ const TagManager = ({
       if (!isInputFocused && /^[1-9]$/.test(e.key)) {
         const index = parseInt(e.key, 10) - 1;
         if (index >= 0 && index < tags.length) {
-          const tagObj = activeClasses.find((cls) => cls.id === tags[index]);
+          const tagObj = activeClassIds.find((cls) => cls.id === tags[index]);
           if (tagObj) {
             handleTagClick(tagObj);
           }
@@ -187,7 +187,7 @@ const TagManager = ({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [handleTagClick, tags, isInputFocused, activeClasses]);
+  }, [handleTagClick, tags, isInputFocused, activeClassIds]);
 
   // 입력값 변경 시 자동완성 제안 리스트 필터링
   const handleInputChange = (e) => {
@@ -257,9 +257,14 @@ const TagManager = ({
     }
   };
 
-  const sortedActiveClasses = activeClasses
+  const sortedactiveClassIds = activeClassIds
   .filter((id) => !!classes[id]?.createdAt)
-  .sort((a, b) => new Date(classes[b].createdAt) - new Date(classes[a].createdAt));
+  // .sort((a, b) => new Date(classes[b].createdAt) - new Date(classes[a].createdAt));
+
+  const displayableClassIds = useMemo(() =>
+    activeClassIds.filter(id => !!classes[id]),
+    [activeClassIds, classes] // classes 객체가 변경될 때도 재계산
+  );
 
   return (
     <Container>
@@ -302,7 +307,7 @@ const TagManager = ({
       )}
 
       <TagList>
-        {sortedActiveClasses.map((tagId) => {
+        {displayableClassIds.map((tagId) => {
           const tagObj = classes[tagId] || {};
           const state = tagStates[tagId] || { count: 0 };
           const isSelected = state.count > 0;

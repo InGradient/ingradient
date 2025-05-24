@@ -67,6 +67,7 @@ export async function createClass(cls) {
 
 // [GET] 단일 Class 조회
 export async function getClass(classId) {
+  console.log("Class ID :", classId)
   const res = await axios.get(`/api/classes/${classId}`);
   return res.data;
 }
@@ -224,11 +225,13 @@ export function uploadFiles(droppedFiles, sessionId, onProgress, onFileComplete)
 export async function confirmUploads(sessionId, fileIds) {
   const formData = new FormData();
   formData.append("session_id", sessionId);
+  // 각 fileId를 개별적으로 'file_ids'라는 이름으로 추가
+  console.log("fileIds :", fileIds)
   fileIds.forEach((id) => formData.append("file_ids", id));
 
-  return axios.post("/api/uploads/commit-uploads", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  // axios는 자동으로 Content-Type을 multipart/form-data로 설정할 것입니다.
+  // 명시적으로 설정할 필요는 없습니다.
+  return axios.post("/api/uploads/commit-uploads", formData);
 }
 
 /**

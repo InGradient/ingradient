@@ -45,6 +45,8 @@ export default function CatalogPage() {
   const [selectedImageIds, setSelectedImageIds] = useState([]);
   const [isImageEditorOpen, setIsImageEditorOpen] = useState(false);
 
+  const [mode, setMode] = useState("bbox");
+
   useEffect(() => {
     loadDataset();
   }, []);
@@ -72,14 +74,27 @@ export default function CatalogPage() {
   }, [images, selectedDatasetIds, classes]);
 
   const activeClasses = useMemo(() => {
+    // 1. 선택된 모든 데이터셋에서 classId들을 수집
     const allClasses = selectedDatasetIds.flatMap(
       (datasetId) => datasets[datasetId]?.classIds || []
     );
-  
+
+    // 2. 중복 제거하여 고유한 classId 목록 생성
     const uniqueClasses = Array.from(new Set(allClasses));
-  
-    return uniqueClasses;
-  }, [datasets, selectedDatasetIds]);
+
+    // 3. 고유한 classId 목록을 생성일자(createdAt) 기준으로 정렬 (최신순)
+    const sortedUniqueClasses = uniqueClasses
+      .filter(id => classes[id]?.createdAt)
+      .sort((a, b) => {
+          const dateA = classes[a]?.createdAt ? new Date(classes[a].createdAt) : 0;
+          const dateB = classes[b]?.createdAt ? new Date(classes[b].createdAt) : 0;
+          return dateB - dateA;
+      });
+
+    return sortedUniqueClasses;
+
+  }, [datasets, selectedDatasetIds, classes]);
+
 
   // 사이드바 & Property 섹션 상태
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
@@ -242,7 +257,7 @@ export default function CatalogPage() {
           selectedDatasetIds={selectedDatasetIds}
           selectedImageIds={selectedImageIds}
           classes={classes}
-          activeClasses={activeClasses}
+          activeClassIds={activeClasses}
           saveClass={saveClass}
           deleteClass={deleteClass}
           saveImage={saveImage}
@@ -255,6 +270,8 @@ export default function CatalogPage() {
           classes={classes}
           labels={labels}
           saveLabels={saveLabels}
+          mode={mode}
+          setMode={setMode}
           onClose={() => {
             setZoomedImageObj(null);
             setIsImageEditorOpen(false);

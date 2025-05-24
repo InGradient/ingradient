@@ -10,3 +10,4 @@ static/
 ingradient.db
 *.ipynb
 server/uploads/
+plugins/

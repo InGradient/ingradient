@@ -156,9 +156,22 @@ class Image(Base):
         cascade="save-update, merge"
     )
 
-    bounding_boxes = relationship("BoundingBox", back_populates="image")
-    keypoints = relationship("KeyPoint", back_populates="image")
-    segmentations = relationship("Segmentation", back_populates="image")
+
+    bounding_boxes = relationship(
+        "BoundingBox",
+        back_populates="image",
+        cascade="all, delete-orphan"
+    )
+    keypoints = relationship(
+        "KeyPoint",
+        back_populates="image",
+        cascade="all, delete-orphan"
+    )
+    segmentations = relationship(
+        "Segmentation",
+        back_populates="image",
+        cascade="all, delete-orphan"
+    )
     
     image_features = relationship(
         "ImageFeature",

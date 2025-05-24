@@ -104,7 +104,7 @@ This single command will start:
 Below is an example of how to interact with Ingradient programmatically using the Python SDK:
 
 ```python
-from ingradient_sdk.client import Ingradient
+from ingradient_sdk import Ingradient
 
 # 1. Initialize Ingradient client: Set server URL
 ing = Ingradient(url="http://localhost:8000")

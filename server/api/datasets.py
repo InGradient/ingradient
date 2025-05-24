@@ -131,55 +131,72 @@ def update_dataset(dataset_id: str, updated_data: dict, db: Session = Depends(ge
     db.refresh(ds)
     return ds
 
+def _delete_image_files(img: Image):
+    """(이미지 파일 삭제 로직 분리)"""
+    if img.file_location and os.path.exists(img.file_location):
+        try:
+            print(f"Deleting file: {img.file_location}") # 로그 추가
+            os.remove(img.file_location)
+        except Exception as e:
+            print(f"Failed to delete file: {img.file_location}, Error: {e}")
+
+    if img.thumbnail_location and os.path.exists(img.thumbnail_location):
+        try:
+            print(f"Deleting thumbnail: {img.thumbnail_location}") # 로그 추가
+            os.remove(img.thumbnail_location)
+        except Exception as e:
+            print(f"Failed to delete thumbnail: {img.thumbnail_location}, Error: {e}")
+
 @router.delete("/{dataset_id}")
 def delete_dataset(dataset_id: str, db: Session = Depends(get_db)):
     ds = db.query(Dataset).filter(Dataset.id == dataset_id).first()
     if not ds:
         return {"error": "Dataset not found"}
 
-    # 1) 데이터셋에 연결된 이미지 처리
-    #    이미지가 이 데이터셋에만 연결되어 있다면 파일+DB 삭제,
-    #    아니면 이 데이터셋과의 연결만 해제
-    for img in list(ds.images):  # 순회 중에 remove()할 수 있으므로 list로 복사
+    images_to_delete = []
+    images_to_unlink = []
+
+    # 1) 삭제/연결 해제할 이미지 결정
+    for img in list(ds.images):
+        print(f"Processing Image ID: {img.id}, Dataset Count: {len(img.datasets)}") # 로그 추가
         if len(img.datasets) == 1:
-            # 이 이미지가 오직 해당 데이터셋에만 연결됨 → 완전 삭제
-            # (1) 파일 삭제
-            if img.file_location and os.path.exists(img.file_location):
-                try:
-                    os.remove(img.file_location)
-                except Exception as e:
-                    print(f"Failed to delete file: {img.file_location}, Error: {e}")
-
-            if img.thumbnail_location and os.path.exists(img.thumbnail_location):
-                try:
-                    os.remove(img.thumbnail_location)
-                except Exception as e:
-                    print(f"Failed to delete thumbnail: {img.thumbnail_location}, Error: {e}")
-
-            # (2) DB에서 이미지 삭제
-            db.delete(img)
+            images_to_delete.append(img)
         else:
-            # 여러 데이터셋과 연결됨 → 이 데이터셋과의 연결만 해제
-            ds.images.remove(img)
+            images_to_unlink.append(img)
 
-    db.commit()
-    db.refresh(ds)
+    # 2) 연결 해제할 이미지 처리
+    for img in images_to_unlink:
+        print(f"Unlinking Image ID: {img.id} from Dataset {ds.id}") # 로그 추가
+        ds.images.remove(img)
 
-    # 2) 데이터셋에 연결된 클래스 처리
+    # 3) 삭제할 이미지 처리 (파일 삭제 + DB 삭제 마킹)
+    for img in images_to_delete:
+        print(f"Deleting Image ID: {img.id}") # 로그 추가
+        _delete_image_files(img) # 파일 삭제 먼저 수행
+        db.delete(img)           # DB 삭제 마킹
+
+    # 4) 클래스 처리 (동일한 로직)
+    classes_to_delete = []
+    classes_to_unlink = []
     for cls_obj in list(ds.classes):
         if len(cls_obj.datasets) == 1:
-            # 이 클래스가 오직 해당 데이터셋에만 연결됨 → 완전 삭제
-            db.delete(cls_obj)
+            classes_to_delete.append(cls_obj)
         else:
-            # 여러 데이터셋과 연결됨 → 이 데이터셋과의 연결만 해제
-            ds.classes.remove(cls_obj)
+             classes_to_unlink.append(cls_obj)
+    for cls_obj in classes_to_unlink:
+        ds.classes.remove(cls_obj)
+    for cls_obj in classes_to_delete:
+        db.delete(cls_obj)
 
-    db.commit()
-    db.refresh(ds)
-
-    # 3) 최종적으로 데이터셋 자체 삭제
+    # 5) 데이터셋 자체 삭제 마킹
     db.delete(ds)
-    db.commit()
 
-    return {"message": f"Dataset {dataset_id} deleted (images/classes also updated)."}
+    # 6) 모든 변경 사항을 한 번에 커밋
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback() # 오류 발생 시 롤백
+        print(f"Failed to commit dataset deletion: {e}")
+        return {"error": "Failed to delete dataset."}
 
+    return {"message": f"Dataset {dataset_id} deleted."}
