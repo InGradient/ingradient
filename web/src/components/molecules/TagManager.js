@@ -149,21 +149,31 @@ const TagManager = ({
     setTags(activeClassIds);
   }, [activeClassIds]);
 
-  // 태그 클릭 핸들러
   const handleTagClick = useCallback(
     (tag) => {
-      Object.keys(selectedImages).forEach((imageId) => {
-        const currentImage = selectedImages[imageId];
-        const existingClassIds = currentImage.classIds || [];
-        const isTagIncluded = existingClassIds.includes(tag.id);
+      const imagesToUpdate = Object.values(selectedImages);
 
-        // 토글 방식으로 해당 태그를 추가/제거
-        const updatedImage = {
-          ...currentImage,
-          id: imageId,
-          classIds: isTagIncluded ? [] : [tag.id],
-        };
-        saveImage(updatedImage);
+      if (imagesToUpdate.length === 0) return;
+
+      const tagIdToProcess = tag.id;
+
+      const anyImageHasTheTag = imagesToUpdate.some(
+        (image) => image.classIds && image.classIds.includes(tagIdToProcess)
+      );
+
+      let newClassIdsForAllSelectedImages;
+
+      if (anyImageHasTheTag) {
+        newClassIdsForAllSelectedImages = [];
+      } else {
+        newClassIdsForAllSelectedImages = [tagIdToProcess];
+      }
+
+      imagesToUpdate.forEach((image) => {
+        saveImage({
+          ...image,
+          classIds: newClassIdsForAllSelectedImages,
+        });
       });
     },
     [selectedImages, saveImage]
@@ -256,10 +266,6 @@ const TagManager = ({
       saveImage(lastClickedImage.id, { class: "" });
     }
   };
-
-  const sortedactiveClassIds = activeClassIds
-  .filter((id) => !!classes[id]?.createdAt)
-  // .sort((a, b) => new Date(classes[b].createdAt) - new Date(classes[a].createdAt));
 
   const displayableClassIds = useMemo(() =>
     activeClassIds.filter(id => !!classes[id]),
