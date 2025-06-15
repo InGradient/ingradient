@@ -23,7 +23,7 @@ const HiddenInput = styled.input`
   display: none;
 `;
 
-const DragDropArea = ({ onFilesDrop, acceptedFileType, children }) => {
+export const DragDropArea = React.forwardRef(({ onFilesDrop, acceptedFileType, children, ...props }, ref) => {
   const fileInputRef = useRef(null);
 
   const handleDragOver = (e) => {
@@ -31,23 +31,22 @@ const DragDropArea = ({ onFilesDrop, acceptedFileType, children }) => {
     e.stopPropagation();
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (onFilesDrop && e.dataTransfer.files) {
-      const files = Array.from(e.dataTransfer.files).filter((file) =>
-        !acceptedFileType || file.type.match(new RegExp(acceptedFileType.replace("*", ".*")))
-      );
-      onFilesDrop(files);
+    if (onFilesDrop && e.dataTransfer.items) {
+      const items = Array.from(e.dataTransfer.items);
+      const files = await processDroppedItems(items);
+      const imageFiles = files.filter(file => !acceptedFileType || file.type.match(new RegExp(acceptedFileType.replace("*", ".*"))));
+      onFilesDrop(imageFiles);
     }
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = async (e) => {
     if (onFilesDrop && e.target.files) {
-      const files = Array.from(e.target.files).filter((file) =>
-        !acceptedFileType || file.type.match(new RegExp(acceptedFileType.replace("*", ".*")))
-      );
-      onFilesDrop(files);
+      const files = Array.from(e.target.files);
+      const imageFiles = files.filter(file => !acceptedFileType || file.type.match(new RegExp(acceptedFileType.replace("*", ".*"))));
+      onFilesDrop(imageFiles);
     }
   };
 
@@ -57,20 +56,63 @@ const DragDropArea = ({ onFilesDrop, acceptedFileType, children }) => {
 
   return (
     <DragDropContainer
+      ref={ref}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       onClick={openFileSelector}
+      {...props}
     >
       {children}
       <HiddenInput
         ref={fileInputRef}
         type="file"
         multiple
+        webkitdirectory="true"
         accept={acceptedFileType}
         onChange={handleInputChange}
       />
     </DragDropContainer>
   );
-};
+});
 
-export default DragDropArea;
+async function processDroppedItems(items) {
+  const files = [];
+  const promises = items.map(async (item) => {
+    const entry = item.webkitGetAsEntry();
+    if (entry) {
+      await traverseFileTree(entry, files);
+    }
+  });
+  await Promise.all(promises);
+  return files;
+}
+
+async function traverseFileTree(entry, files) {
+  if (entry.isFile) {
+    return new Promise((resolve, reject) => {
+      entry.file(
+        (file) => {
+          files.push(file);
+          resolve();
+        },
+        (err) => reject(err)
+      );
+    });
+  } else if (entry.isDirectory) {
+    const dirReader = entry.createReader();
+    return new Promise((resolve, reject) => {
+      const readEntries = async () => {
+        dirReader.readEntries(async (entries) => {
+          if (entries.length > 0) {
+            const promises = entries.map((e) => traverseFileTree(e, files));
+            await Promise.all(promises);
+            await readEntries();
+          } else {
+            resolve();
+          }
+        }, reject);
+      };
+      readEntries();
+    });
+  }
+}

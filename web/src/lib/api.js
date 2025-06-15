@@ -1,7 +1,66 @@
 import axios from "axios";
 import qs from "qs"; 
 
-axios.defaults.baseURL = process.env.NEXT_PUBLIC_SERVER_BASE_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_BASE_URL 
+  ? `${process.env.NEXT_PUBLIC_SERVER_BASE_URL}:${process.env.NEXT_PUBLIC_SERVER_PORT}`
+  : "http://localhost:8000";
+
+axios.defaults.baseURL = API_BASE_URL;
+
+/**
+ * =========================
+ *  Authentication APIs
+ * =========================
+ */
+
+export async function register(email, password) {
+  try {
+    const formData = new FormData();
+    formData.append('email', email);
+    formData.append('password', password);
+
+    const response = await axios.post("/auth/register", formData, {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error("Registration error:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers
+    });
+    throw error;
+  }
+}
+
+export async function login(email, password, rememberMe = false) {
+  try {
+    const res = await axios.post("/auth/login", {
+      email,
+      password,
+      rememberMe,
+    }, {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Login error:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers
+    });
+    throw error;
+  }
+}
 
 /**
  * =========================
@@ -363,4 +422,80 @@ export async function compressFeatures(imageIds, modelId, method = "umap") {
     console.error("API Error (compressFeatures):", error);
     return { error: error.response?.data || error.message };
   }
+}
+
+/*
+ * =========================
+ *  Project CRUD (requires auth)
+ * =========================
+ */
+
+function authHeader() {
+  const token =
+    (typeof window !== "undefined" && (localStorage.getItem("token") || sessionStorage.getItem("token"))) ||
+    null;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+// [GET] Logged-in user projects
+export async function listProjects() {
+  const res = await axios.get(`/api/projects/`, {
+    headers: {
+      ...authHeader(),
+    },
+  });
+  return res.data;
+}
+
+// [POST] Create new project { name, description }
+export async function createProject(project) {
+  const res = await axios.post(`/api/projects/`, project, {
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeader(),
+    },
+  });
+  return res.data;
+}
+
+// [GET] Single project by id
+export async function getProject(projectId) {
+  const res = await axios.get(`/api/projects/${projectId}`, {
+    headers: { ...authHeader() },
+  });
+  return res.data;
+}
+
+// [PUT] Update project { name?, description? }
+export async function updateProject(projectId, updatedData) {
+  const res = await axios.put(`/api/projects/${projectId}`, updatedData, {
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeader(),
+    },
+  });
+  return res.data;
+}
+
+// [DELETE] Delete project
+export async function deleteProject(projectId) {
+  const res = await axios.delete(`/api/projects/${projectId}`, {
+    headers: { ...authHeader() },
+  });
+  return res.data;
+}
+
+// [GET] Datasets for a given project
+export async function listProjectDatasets(projectId) {
+  const res = await axios.get(`/api/projects/${projectId}/datasets`, {
+    headers: { ...authHeader() },
+  });
+  return res.data;
+}
+
+export async function attachDatasetToProject(projectId, datasetId) {
+  const res = await axios.post(`/api/projects/${projectId}/datasets/${datasetId}`, null, {
+    headers: { ...authHeader() },
+  });
+  return res.data;
 }

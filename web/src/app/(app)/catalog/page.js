@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import styled from "styled-components";
+import { useSearchParams } from "next/navigation";
 
 import DatasetSection from "./dataset/page";
 import ContentSection from "./content/page";
@@ -20,6 +21,9 @@ const LayoutContainer = styled.div`
 `;
 
 export default function CatalogPage() {
+
+  const searchParams = useSearchParams();
+  const projectIdParam = searchParams.get("projectId");
 
   const loadDataset = useMyStore((state) => state.loadDataset);
   const loadClasses = useMyStore((state) => state.loadClasses)
@@ -48,8 +52,8 @@ export default function CatalogPage() {
   const [mode, setMode] = useState("bbox");
 
   useEffect(() => {
-    loadDataset();
-  }, []);
+    loadDataset(projectIdParam);
+  }, [projectIdParam]);
 
   useEffect(() => {
     loadImages(selectedDatasetIds);
@@ -246,6 +250,7 @@ export default function CatalogPage() {
         selectedImageIds={selectedImageIds}
         setSelectedImageIds={setSelectedImageIds}
         onImageDoubleClick={handleImageDoubleClick}
+        projectId={projectIdParam}
       />
 
       {isPropertyVisible && lastClickedImage && (

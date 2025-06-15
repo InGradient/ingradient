@@ -1,7 +1,7 @@
-import React, { useMemo, useState, useRef } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import styled from "styled-components";
-import DragDropArea from "@/components/molecules/DragDropArea";
+import { DragDropArea } from "@/components/molecules/DragDropArea";
 import FileList from "@/components/molecules/FileList";
 import {
   Dialog,
@@ -41,6 +41,42 @@ const UploadModal = ({ saveImage, selectedDatasetIds, onClose }) => {
   const [commitProgress, setCommitProgress] = useState({ processed: 0, total: 0 });
   const [isCommitting, setIsCommitting] = useState(false);
   const wsRef = useRef(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const dragCounter = useRef(0);
+
+  useEffect(() => {
+    const handleDragEnter = (e) => {
+      if (e.dataTransfer?.types?.includes("Files")) {
+        dragCounter.current += 1;
+        setIsDraggingOver(true);
+      }
+    };
+
+    const handleDragLeave = (e) => {
+      if (e.dataTransfer?.types?.includes("Files")) {
+        dragCounter.current -= 1;
+        if (dragCounter.current <= 0) {
+          setIsDraggingOver(false);
+          dragCounter.current = 0;
+        }
+      }
+    };
+
+    const handleDrop = () => {
+      dragCounter.current = 0;
+      setIsDraggingOver(false);
+    };
+
+    window.addEventListener("dragenter", handleDragEnter);
+    window.addEventListener("dragleave", handleDragLeave);
+    window.addEventListener("drop", handleDrop);
+
+    return () => {
+      window.removeEventListener("dragenter", handleDragEnter);
+      window.removeEventListener("dragleave", handleDragLeave);
+      window.removeEventListener("drop", handleDrop);
+    };
+  }, []);
 
   function readImageDimensions(file) {
     return new Promise((resolve, reject) => {
@@ -71,17 +107,26 @@ const UploadModal = ({ saveImage, selectedDatasetIds, onClose }) => {
   const isUploadComplete = overallProgress === 100;
 
   const onFilesDrop = async (droppedFiles) => {
+    setIsDraggingOver(false);
+    dragCounter.current = 0;
+
     const startIndex = uploadList.length;
 
     const newFilePromises = droppedFiles.map(async (file) => {
-      const { width, height } = await readImageDimensions(file);
+      let fileObj = file;
+      if (typeof file === 'string' && file.startsWith('data:image/')) {
+        const res = await fetch(file);
+        const blob = await res.blob();
+        fileObj = new File([blob], 'pasted-image.png', { type: 'image/png' });
+      }
+      const { width, height } = await readImageDimensions(fileObj);
       return {
         status: "idle",
-        filename: file.name,
-        originalFile: file,
+        filename: fileObj.name,
+        originalFile: fileObj,
         progress: 0,
-        size: file.size,
-        type: file.type,
+        size: fileObj.size,
+        type: fileObj.type,
         width,
         height,
       };
@@ -91,7 +136,7 @@ const UploadModal = ({ saveImage, selectedDatasetIds, onClose }) => {
     setUploadList((prev) => [...prev, ...initialList]);
 
     const { controllers: newControllers } = uploadFiles(
-      droppedFiles,
+      droppedFiles.map(file => typeof file === 'string' ? new File([file], 'pasted-image.png', { type: 'image/png' }) : file),
       sessionId,
       (progressInfo) => {
         setUploadList((prev) =>
@@ -126,7 +171,9 @@ const UploadModal = ({ saveImage, selectedDatasetIds, onClose }) => {
   };
 
   const connectWebSocket = (sessionId) => {
-    const serverBaseUrl = process.env.NEXT_PUBLIC_SERVER_BASE_URL || "http://localhost:8000";
+    const serverBaseUrl = process.env.NEXT_PUBLIC_SERVER_BASE_URL
+      ? `${process.env.NEXT_PUBLIC_SERVER_BASE_URL}:${process.env.NEXT_PUBLIC_SERVER_PORT}`
+      : "http://localhost:8000";
     try {
       const url = new URL(serverBaseUrl);
       const apiHost = url.host;
@@ -280,16 +327,26 @@ const UploadModal = ({ saveImage, selectedDatasetIds, onClose }) => {
 
   return (
     <>
-      <ModalOverlay onClick={isCommitting ? undefined : handleCancel} /> {/* 커밋 중에는 오버레이 클릭 방지 */}
+      <ModalOverlay onClick={isCommitting ? undefined : handleCancel} />
       <Dialog>
         <DialogTitle>
           <h3>Upload Images</h3>
         </DialogTitle>
         <DialogContent>
-          <DragDropArea 
-            acceptedFileType="image/*" 
+          <DragDropArea
+            acceptedFileType="image/*"
             onFilesDrop={onFilesDrop}
-            disabled={isCommitting} // 커밋 중에는 드래그앤드롭 비활성화
+            disabled={isCommitting}
+            style={
+              isDraggingOver
+                ? {
+                    position: "relative",
+                    zIndex: 1, // Dialog 내 다른 요소와의 관계를 위해
+                    boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.5)",
+                    backgroundColor: "white", // 호버 효과 등을 덮기 위해
+                  }
+                : {}
+            }
           >
             Drag & Drop files here or click to select
           </DragDropArea>
@@ -325,14 +382,14 @@ const UploadModal = ({ saveImage, selectedDatasetIds, onClose }) => {
           <button
             className="outlined"
             onClick={handleCancel}
-            disabled={isCommitting} // 커밋 중에는 취소 버튼도 비활성화
+            disabled={isCommitting}
             style={{ color: "var(--color-warning)", borderColor: "var(--color-warning)" }}
           >
             Cancel
           </button>
           <button 
             onClick={handleConfirm} 
-            disabled={!isUploadComplete || isCommitting} // 이 부분은 이미 요청대로 잘 되어 있습니다.
+            disabled={!isUploadComplete || isCommitting}
           >
             {isCommitting ? 'Committing...' : 'Confirm'}
           </button>

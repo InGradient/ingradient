@@ -80,7 +80,6 @@ body {
   line-height: 1.5;
 }
 
-
 /* 4. 링크 기본 스타일 */
 a {
   color: var(--blue-500);
@@ -264,4 +263,15 @@ img {
   user-select: none;
   -webkit-user-drag: none;
   user-drag: none;
+}
+
+/* flex-1 main이 전체 공간을 다 차지하도록 강제 */
+main {
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box;
 }

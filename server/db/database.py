@@ -1,5 +1,5 @@
 # server/db/database.py
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 import uuid
@@ -70,7 +70,18 @@ def insert_default_model():
             db.close()
             return
 
-    
+def _ensure_schema_compatibility():
+    """Lightweight migration helper for local SQLite: add missing columns if needed."""
+    if engine.dialect.name != "sqlite":
+        return  # only handle sqlite here
+
+    with engine.connect() as conn:
+        # Check projects.updated_at
+        res = conn.execute(text("PRAGMA table_info(projects);")).fetchall()
+        cols = [row[1] for row in res]
+        if "updated_at" not in cols:
+            conn.execute(text("ALTER TABLE projects ADD COLUMN updated_at DATETIME"))
+            print("[DB] Added missing column projects.updated_at")
 
 def init_db():
     """
@@ -78,6 +89,7 @@ def init_db():
     """
     from server.db import models  # 모든 모델이 로드되어야 Base.metadata에 등록됨
     Base.metadata.create_all(bind=engine)
+    _ensure_schema_compatibility()
     insert_default_model()
 
 def get_db():

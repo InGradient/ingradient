@@ -1,4 +1,23 @@
+# Python
 __pycache__/
+*.py[cod]
+*$py.class
+
+# Environment
+.env
+.env.*
+
+# Database
+*.db
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
 api/__pycache__/
 core/__pycache__/
 db/__pycache__/

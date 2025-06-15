@@ -15,7 +15,13 @@ export const getExecutionMode = () => {
 
 export const getServerBaseUrl = () => {
   if (typeof window !== "undefined") {
+    if (process.env.NEXT_PUBLIC_SERVER_BASE_URL && process.env.NEXT_PUBLIC_SERVER_PORT) {
+      return `${process.env.NEXT_PUBLIC_SERVER_BASE_URL}:${process.env.NEXT_PUBLIC_SERVER_PORT}`;
+    }
     return process.env.NEXT_PUBLIC_SERVER_BASE_URL || `${window.location.origin}`;
+  }
+  if (process.env.NEXT_PUBLIC_SERVER_BASE_URL && process.env.NEXT_PUBLIC_SERVER_PORT) {
+    return `${process.env.NEXT_PUBLIC_SERVER_BASE_URL}:${process.env.NEXT_PUBLIC_SERVER_PORT}`;
   }
   return process.env.NEXT_PUBLIC_SERVER_BASE_URL || "";
 };

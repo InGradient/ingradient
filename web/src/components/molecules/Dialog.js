@@ -2,7 +2,8 @@ import styled from "styled-components";
 
 export const Dialog = styled.div`
   position: fixed;
-  width: 500px;
+  width: 100%;
+  max-width: 444px;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);

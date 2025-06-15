@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import styled from "styled-components";
-
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChevronRight,
@@ -11,7 +10,10 @@ import {
   faChartLine,
   faArrowDown,
   faArrowUp,
+  faChevronLeft,
 } from "@fortawesome/free-solid-svg-icons";
+import { useSearchParams, useRouter } from "next/navigation";
+import { getProject } from "@/lib/api";
 
 import Statics from "../Viewers/Statics";
 import ListView from "../Viewers/ListView";
@@ -255,6 +257,25 @@ const findGroupLabel = (optionValue) => {
   return found ? found.label : optionValue;
 };
 
+const ProjectTitle = ({ projectId }) => {
+  const [projectName, setProjectName] = useState("");
+  const router = useRouter();
+  useEffect(() => {
+    if (projectId) {
+      getProject(projectId).then((p) => setProjectName(p.name));
+    }
+  }, [projectId]);
+  return (
+    <span
+      style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+      onClick={() => router.push('/project')}
+    >
+      <FontAwesomeIcon icon={faChevronLeft} style={{ width: 21, height: 20 }} />
+      <h1 style={{ margin: 0 }}>{projectName}</h1>
+    </span>
+  );
+};
+
 const ContentSection = ({
   images,
   saveImage,
@@ -267,6 +288,7 @@ const ContentSection = ({
   selectedImageIds,
   setSelectedImageIds,
   onImageDoubleClick,
+  projectId,
 }) => {
   const [viewMode, setViewMode] = useState("grid");
   const [isImageUploadModalVisible, setImageUploadModalVisible] = useState(false);
@@ -362,7 +384,7 @@ const ContentSection = ({
             </>
           </ToggleButton>
         )}
-        <h1>Catalog</h1>
+        <ProjectTitle projectId={projectId} />
       </ContentHeader>
 
       <StyledTableMenu>

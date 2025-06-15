@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   // Dataset API
   listDatasets as apiListDatasets,
+  listProjectDatasets as apiListProjectDatasets,
   getDataset as apiGetDataset,
   createDataset as apiCreateDataset,
   updateDataset as apiUpdateDataset,
@@ -32,6 +33,7 @@ import {
   listSegmentations,
   listLabels as apiListLabels,
   saveLabels as apiSaveLabels,
+  attachDatasetToProject as apiAttachDatasetToProject,
 } from '@/lib/api';
 
 
@@ -50,11 +52,12 @@ export const useMyStore = create((set, get) => ({
    *  INITIAL DATA LOADING
    * ===================
    */
-  loadDataset: async () => {
+  loadDataset: async (projectId = null) => {
     try {
-      const datasets = await apiListDatasets();
+      const datasets = projectId ? await apiListProjectDatasets(projectId) : await apiListDatasets();
       const datasetMap = Object.fromEntries(datasets.map((ds) => [ds.id, ds]));
   
+      console.log("loadDataset", projectId, datasetMap);
       set((state) => ({
         datasets: datasetMap,
         classes: state.classes,
@@ -164,6 +167,13 @@ export const useMyStore = create((set, get) => ({
           console.error("Create dataset failed:", serverResponse.error);
           return;
         }
+        try {
+          const url = new URL(window.location.href);
+          const projectIdParam = url.searchParams.get('projectId');
+          if (projectIdParam) {
+            await apiAttachDatasetToProject(projectIdParam, id);
+          }
+        } catch (e) { console.error('attachDatasetToProject error', e); }
       }
 
       set((state) => {
@@ -560,6 +570,19 @@ export const useMyStore = create((set, get) => ({
 
       // ✅ API 응답에 오류가 없으면 Zustand 상태 업데이트
       if (!createdDataset.error) {
+        // 프로젝트 페이지라면 자동으로 연결
+        try {
+          const url = new URL(window.location.href);
+          const projectIdParam = url.searchParams.get("projectId");
+          if (projectIdParam) {
+            await apiAttachDatasetToProject(projectIdParam, createdDataset.id);
+            // 최신 데이터 다시 로드
+            await get().loadDataset(projectIdParam);
+          }
+        } catch (e) {
+          console.error("attachDatasetToProject error", e);
+        }
+
         set((state) => ({
           datasets: {
             ...state.datasets,

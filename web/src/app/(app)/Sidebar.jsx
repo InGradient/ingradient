@@ -30,11 +30,36 @@ const StyledSidebar = styled.div`
     flex-direction: column;
     padding: 16px 0px;
   }
+
+  .user-initial {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: white;
+    color: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    margin: 16px auto;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+
+    &:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
+    }
+  }
 `;
 
 export const Sidebar = ({ className }) => {
   const pathname = usePathname();
   const isActiveCatalog = pathname === "/catalog/";
+  
+  // TODO: 실제 사용자 정보로 교체 필요
+  const userInitial = "J"; // 임시로 하드코딩된 이니셜
 
   return (
     <StyledSidebar className={`sidebar ${className}`}>
@@ -46,9 +71,12 @@ export const Sidebar = ({ className }) => {
           <TabMenu
             icon={<Grid color="white" />}
             status={isActiveCatalog ? "active" : "default"}
-            to="/catalog"
+            to="/project"
           />
         </div>
+      </div>
+      <div className="user-initial" onClick={() => window.location.href = "/profile"}>
+        {userInitial}
       </div>
     </StyledSidebar>
   );

@@ -21,9 +21,12 @@ class RoleEnum(str, enum.Enum):
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(String, primary_key=True, index=True)
-    username = Column(String, unique=True, nullable=False)
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True)
+    password = Column(String)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     project_users = relationship("ProjectUser", back_populates="user")
     projects = relationship(
@@ -39,8 +42,9 @@ class Project(Base):
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    project_users = relationship("ProjectUser", back_populates="project")
+    project_users = relationship("ProjectUser", back_populates="project", cascade="all, delete-orphan")
 
     users = relationship(
         "User",
