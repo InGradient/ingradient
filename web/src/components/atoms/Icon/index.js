@@ -10,3 +10,4 @@ export { default as XMark } from './icons/xmark';
 export { default as Trash } from './icons/trash';
 export { default as TriangleExclamation } from './icons/triangle-exclamation';
 export { default as RotateLeft } from './icons/rotate-left';
+export { default as Sidebar } from './icons/sidebar';

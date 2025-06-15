@@ -230,23 +230,49 @@ export async function deleteImage(imageId, selectedDatasetIds = []) {
 // }
 
 /**
- * 여러 파일(droppedFiles)을 임시 업로드 (upload-temp)
- * - sessionId: 업로드 세션 식별자
- * - onProgress, onFileComplete 콜백으로 진행도 / 개별 완료 상태 전달
+ * Helper: concurrency-limited async pool
  */
-export function uploadFiles(droppedFiles, sessionId, onProgress, onFileComplete) {
-  const controllers = [];
-  const promises = [];
+async function asyncPool(poolLimit, array, iteratorFn) {
+  const ret = [];
+  const executing = [];
+  for (const item of array) {
+    const p = Promise.resolve().then(() => iteratorFn(item));
+    ret.push(p);
 
-  droppedFiles.forEach((file, index) => {
+    if (poolLimit <= array.length) {
+      const e = p.then(() => executing.splice(executing.indexOf(e), 1));
+      executing.push(e);
+      if (executing.length >= poolLimit) {
+        await Promise.race(executing);
+      }
+    }
+  }
+  return Promise.all(ret);
+}
+
+/**
+ * Concurrency-aware uploadFiles
+ */
+export function uploadFiles(
+  droppedFiles,
+  sessionId,
+  onProgress,
+  onFileComplete,
+  concurrency = 5
+) {
+  const controllers = [];
+  let uploadedCount = 0;
+
+  async function uploadSingle({ file, index }) {
     const controller = new AbortController();
-    controllers.push(controller);
+    controllers[index] = controller;
 
     const formData = new FormData();
     formData.append("file", file);
     formData.append("session_id", sessionId);
 
-    const uploadPromise = axios.post("/api/uploads/upload-temp", formData, {
+    return axios
+      .post("/api/uploads/upload-temp", formData, {
       signal: controller.signal,
       onUploadProgress: (evt) => {
         if (evt.total) {
@@ -256,24 +282,26 @@ export function uploadFiles(droppedFiles, sessionId, onProgress, onFileComplete)
       },
     })
       .then((res) => {
-        // 개별 파일 업로드 완료 시
+        uploadedCount += 1;
         onFileComplete({
           index,
           status: "success",
-          fileId: res.data.fileId,  // 서버 응답 구조에 맞춰 조정
+          fileId: res.data.fileId,
           filename: res.data.filename,
         });
       })
       .catch((error) => {
+        uploadedCount += 1;
         onFileComplete({
           index,
           status: "failure",
           error: error.message,
         });
       });
+  }
 
-    promises.push(uploadPromise);
-  });
+  const fileObjs = droppedFiles.map((file, idx) => ({ file, index: idx }));
+  const promises = asyncPool(concurrency, fileObjs, uploadSingle);
 
   return { controllers, promises };
 }

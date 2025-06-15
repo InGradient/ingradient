@@ -65,6 +65,8 @@ def process_files_in_background(session_id: str, file_ids: List[str], loop: asyn
     os.makedirs(final_folder, exist_ok=True)
     os.makedirs(thumbnail_folder, exist_ok=True)
 
+    print(f"Processing files in background: {session_id} ({len(file_ids)} files)")
+
     moved_files_info = []
     total_files = len(file_ids)
     processed_count = 0

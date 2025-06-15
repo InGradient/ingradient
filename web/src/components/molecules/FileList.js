@@ -58,8 +58,10 @@ const FileList = ({ files }) => (
             style={{ color: "#555", fontSize: "24px" }}
           />
           <FileNameContainer>
-            {f.originalFile.name}
-            <FileSizeRow>{formatFileSize(f.originalFile.size)}</FileSizeRow>
+            {f.filename || f.originalFile?.name || ""}
+            {f.size ? (
+              <FileSizeRow>{formatFileSize(f.size)}</FileSizeRow>
+            ) : null}
           </FileNameContainer>
         </FileDetailsContainer>
         <StatusIconContainer>
@@ -96,7 +98,7 @@ const FileList = ({ files }) => (
               icon={faCheck}
               style={{ color: "green", fontSize: "20px" }}
             />
-          ) : (
+          ) : f.status === "info" ? null : (
             <div />
           )}
         </StatusIconContainer>

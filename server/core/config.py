@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     KRATOS_ADMIN_URL: str = os.getenv("KRATOS_ADMIN_URL", "http://localhost:4434")
     
     # Database settings
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./sql_app.db")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///static/ingradient.db")
     
     # Security settings
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key")

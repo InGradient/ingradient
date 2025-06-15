@@ -44,12 +44,21 @@ const StyledEmptyMessage = styled.div`
   }
 `;
 
-export const EmptyMessage = ({ children }) => {
+export const EmptyMessage = ({ children, onCreate }) => {
   return (
     <StyledEmptyMessage>
       <div className="upload-message">
         <h3>No {children} Found</h3>
         You need to create new {children}.
+        {onCreate && (
+          <button
+            className="button"
+            onClick={onCreate}
+            style={{ marginTop: 16 }}
+          >
+            Create {children}
+          </button>
+        )}
       </div>
     </StyledEmptyMessage>
   );

@@ -111,15 +111,29 @@ const UploadModal = ({ saveImage, selectedDatasetIds, onClose }) => {
     dragCounter.current = 0;
 
     const startIndex = uploadList.length;
+    const PREVIEW_LIMIT = 1000;
+    const DIMENSION_LIMIT = 2000;
+    const shouldReadDimensions = droppedFiles.length <= DIMENSION_LIMIT;
 
-    const newFilePromises = droppedFiles.map(async (file) => {
+    // Preview array limited to first PREVIEW_LIMIT files
+    const previewPromises = droppedFiles.slice(0, PREVIEW_LIMIT).map(async (file, idx) => {
       let fileObj = file;
       if (typeof file === 'string' && file.startsWith('data:image/')) {
         const res = await fetch(file);
         const blob = await res.blob();
         fileObj = new File([blob], 'pasted-image.png', { type: 'image/png' });
       }
-      const { width, height } = await readImageDimensions(fileObj);
+
+      let width = null;
+      let height = null;
+      if (shouldReadDimensions) {
+        try {
+          const dims = await readImageDimensions(fileObj);
+          width = dims.width;
+          height = dims.height;
+        } catch {}
+      }
+
       return {
         status: "idle",
         filename: fileObj.name,
@@ -132,13 +146,24 @@ const UploadModal = ({ saveImage, selectedDatasetIds, onClose }) => {
       };
     });
 
-    const initialList = await Promise.all(newFilePromises);
+    const initialList = await Promise.all(previewPromises);
+    const remainingCount = droppedFiles.length - PREVIEW_LIMIT;
+    if (remainingCount > 0) {
+      initialList.push({
+        status: "info",
+        filename: `+ ${remainingCount.toLocaleString()} more files ...`,
+        originalFile: { name: "", size: 0 },
+        progress: 0,
+      });
+    }
+
     setUploadList((prev) => [...prev, ...initialList]);
 
     const { controllers: newControllers } = uploadFiles(
       droppedFiles.map(file => typeof file === 'string' ? new File([file], 'pasted-image.png', { type: 'image/png' }) : file),
       sessionId,
       (progressInfo) => {
+        if (progressInfo.index < PREVIEW_LIMIT) {
         setUploadList((prev) =>
           prev.map((item, i) => {
             const realIndex = startIndex + progressInfo.index;
@@ -148,23 +173,22 @@ const UploadModal = ({ saveImage, selectedDatasetIds, onClose }) => {
             return item;
           })
         );
+        }
       },
       (fileResult) => {
+        if (fileResult.index < PREVIEW_LIMIT) {
         setUploadList((prev) =>
           prev.map((item, i) => {
             const realIndex = startIndex + fileResult.index;
             if (i === realIndex) {
-              return {
-                ...item,
-                status: fileResult.status,
-                fileId: fileResult.fileId,
-                error: fileResult.error,
-              };
+                return { ...item, status: fileResult.status, fileId: fileResult.fileId };
             }
             return item;
           })
         );
       }
+      },
+      10 // concurrency limit
     );
 
     setControllers((prev) => [...prev, ...newControllers]);
@@ -175,6 +199,7 @@ const UploadModal = ({ saveImage, selectedDatasetIds, onClose }) => {
       ? `${process.env.NEXT_PUBLIC_SERVER_BASE_URL}:${process.env.NEXT_PUBLIC_SERVER_PORT}`
       : "http://localhost:8000";
     try {
+      console.log("serverBaseUrl :", serverBaseUrl)
       const url = new URL(serverBaseUrl);
       const apiHost = url.host;
       const wsProtocol = url.protocol === "https:" ? "wss:" : "ws:";
@@ -229,9 +254,12 @@ const UploadModal = ({ saveImage, selectedDatasetIds, onClose }) => {
   };
 
   const triggerConfirmUploads = async () => {
+    console.log("uploadList :", uploadList)
     const successFileIds = uploadList
       .filter((f) => f.status === "success" && f.fileId)
       .map((f) => f.fileId);
+
+    console.log("successFileIds :", successFileIds)
 
     if (successFileIds.length === 0 && isCommitting) { // isCommitting 확인 추가
         setIsCommitting(false); // 커밋할 파일이 없으면 커밋 상태 해제
@@ -333,8 +361,8 @@ const UploadModal = ({ saveImage, selectedDatasetIds, onClose }) => {
           <h3>Upload Images</h3>
         </DialogTitle>
         <DialogContent>
-          <DragDropArea
-            acceptedFileType="image/*"
+          <DragDropArea 
+            acceptedFileType="image/*" 
             onFilesDrop={onFilesDrop}
             disabled={isCommitting}
             style={

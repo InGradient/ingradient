@@ -8,6 +8,7 @@ import DialogText from "@/components/molecules/DialogText";
 import { Dialog, DialogTitle, DialogContent, DialogActions, ModalOverlay } from "@/components/molecules/Dialog";
 import { listProjects, createProject as apiCreateProject, updateProject as apiUpdateProject, deleteProject as apiDeleteProject } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { EmptyMessage } from "@/components/organisms/EmptyMessage";
 
 /* -------------------------------------------------------------------------- */
 /*                               Styled Blocks                                */
@@ -401,6 +402,8 @@ export default function ProjectPage() {
 
       {isLoading ? (
         <div style={{ padding: 24 }}>Loading...</div>
+      ) : projects.length === 0 ? (
+        <EmptyMessage onCreate={handleCreate}>Project</EmptyMessage>
       ) : (
         <List onClick={handleListClick}>
           {projects.map((project) => (
