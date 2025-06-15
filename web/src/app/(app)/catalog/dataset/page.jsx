@@ -8,6 +8,7 @@ import {
   faEllipsisVertical,
   faPlus,
 } from "@fortawesome/free-solid-svg-icons";
+import { Sidebar as SidebarIcon } from "@/components/atoms/Icon";
 import Checkbox from "@/components/atoms/Checkbox";
 import { EmptyMessage } from "@/components/organisms/EmptyMessage";
 import {
@@ -274,12 +275,7 @@ export default function DatasetSection({
     <Sidebar>
       <SidebarTitle>
         <h1>Dataset</h1>
-        <ToggleButton onClick={() => setIsSidebarVisible((prev) => !prev)}>
-          <>
-            <FontAwesomeIcon icon={faChevronLeft} />
-            <FontAwesomeIcon icon={faChevronLeft} />
-          </>
-        </ToggleButton>
+        <SidebarIcon onClick={() => setIsSidebarVisible((prev) => !prev)} />
       </SidebarTitle>
       <SidebarHeader>
         <SelectAllContainer>

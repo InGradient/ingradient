@@ -11,6 +11,7 @@ import {
 import TagManager from "@/components/molecules/TagManager";
 import useLoadingStore from "@/state/loading";
 import { uploadModel, listModels, extractFeatures } from "@/lib/api";
+import { Sidebar as SidebarIcon } from "@/components/atoms/Icon";
 
 // styled-components (생략된 스타일은 기존과 동일)
 const PropertyContainer = styled.div`
@@ -403,19 +404,7 @@ export default function PropertySection({
   return (
     <PropertyContainer>
       <TitleHeader>
-        <ToggleButton onClick={toggleDrawer}>
-          {isPropertyVisible ? (
-            <>
-              <FontAwesomeIcon icon={faChevronRight} />
-              <FontAwesomeIcon icon={faChevronRight} />
-            </>
-          ) : (
-            <>
-              <FontAwesomeIcon icon={faChevronLeft} />
-              <FontAwesomeIcon icon={faChevronLeft} />
-            </>
-          )}
-        </ToggleButton>
+        <SidebarIcon onClick={toggleDrawer} />
         <h1>Property</h1>
       </TitleHeader>
 

@@ -9,6 +9,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, ModalOverlay } from 
 import { listProjects, createProject as apiCreateProject, updateProject as apiUpdateProject, deleteProject as apiDeleteProject } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { EmptyMessage } from "@/components/organisms/EmptyMessage";
+import Checkbox from "@/components/atoms/Checkbox";
 
 /* -------------------------------------------------------------------------- */
 /*                               Styled Blocks                                */

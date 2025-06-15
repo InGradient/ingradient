@@ -25,7 +25,7 @@ import GroupByMenu, { groupLabels } from "./TableMenu/GroupByMenu";
 import FilterMenu from "./TableMenu/FilterMenu";
 import { filterConfigs } from "./TableMenu/FilterConfigs";
 
-import { ArrowDownUp, Filter, LayerGroup, Grid, ChartScatter } from "@/components/atoms/Icon";
+import { ArrowDownUp, Filter, LayerGroup, Grid, ChartScatter, Sidebar } from "@/components/atoms/Icon";
 import Checkbox from "@/components/atoms/Checkbox";
 import { Toggle, ToggleIcon } from "@/components/molecules/Toggle";
 import UploadModal from "@/app/(app)/catalog/content/UploadModal";
@@ -377,12 +377,7 @@ const ContentSection = ({
     <Content>
       <ContentHeader>
         {!isSidebarVisible && (
-          <ToggleButton onClick={() => setIsSidebarVisible((prev) => !prev)}>
-            <>
-              <FontAwesomeIcon icon={faChevronRight} />
-              <FontAwesomeIcon icon={faChevronRight} />
-            </>
-          </ToggleButton>
+          <Sidebar onClick={() => setIsSidebarVisible((prev) => !prev)} />
         )}
         <ProjectTitle projectId={projectId} />
       </ContentHeader>
